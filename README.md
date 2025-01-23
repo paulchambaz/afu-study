@@ -37,8 +37,8 @@ just report
 ## Authors
 
 - [Paul Chambaz](https://www.linkedin.com/in/paul-chambaz-17235a158/)
-- [Frédéric Li Combeau]()
-- Supervised by [Olivier Sigaud]()
+- [Frédéric Li Combeau](https://www.linkedin.com/in/frederic-li-combeau/)
+- Supervised by [Olivier Sigaud](https://www.isir.upmc.fr/personnel/sigaud/)
 
 ## License
 
