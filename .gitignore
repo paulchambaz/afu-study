@@ -1,1 +1,74 @@
+# personal notes
 paper/*.md
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Nix
+result
+.direnv/
+
+# mypy
+.mypy_cache/
+
+# Jupyter
+.jupyter/
+
+# Git
+.git/
+
+# macOS
+.DS_Store
+
+# Specific to your project
+*.pkl
+.jupyter/
+
+# Flake-specific
+.direnv/
+flake-inputs/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+
+# Large media files (if any)
+*.mp4
+*.tiff
+*.avi
+*.flv
+*.mov
+*.wmv
+
+# Data files (adjust as needed)
+*.csv
+*.json
+*.xml
+
+# Keep .gitkeep files
+!.gitkeep
