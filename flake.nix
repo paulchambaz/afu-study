@@ -42,23 +42,81 @@
           pythonImportsCheck = ["regression_labs"];
         };
 
+        bbrl = pythonPackages.buildPythonPackage {
+          pname = "bbrl";
+          version = "0.1.0";
+          format = "setuptools";
+
+          src = pkgs.fetchFromGitHub {
+            owner = "osigaud";
+            repo = "bbrl";
+            rev = "master";
+            sha256 = "sha256-3u1c4oBbFoAQJjir4/6NSxCmOPQ+OD0jXpGvb7C8EqY=";
+          };
+
+          SETUPTOOLS_SCM_PRETEND_VERSION = "0.1.0";
+
+          nativeBuildInputs = with pythonPackages; [
+            setuptools-scm
+          ];
+
+          propagatedBuildInputs = with pythonPackages; [
+            pytorch
+            torchvision
+            tensorboard
+            tqdm
+            hydra-core
+            numpy
+            pandas
+            opencv4
+            omegaconf
+            matplotlib
+            seaborn
+            scipy
+            gymnasium
+            moviepy
+          ];
+
+          prePatch = ''
+            touch src/bbrl/_version.py
+            echo '__version__ = "0.1.0"' > src/bbrl/_version.py
+          '';
+
+          doCheck = false;
+          pythonImportsCheck = ["bbrl"];
+        };
+
         myPythonPackages = with pythonPackages; [
+          pytest
+          black
+          moviepy
+          flake8
           numpy
           pillow
           matplotlib
           scipy
+          seaborn
+          omegaconf
+          tensorboard
           ipykernel
+          opencv4
           jupyter
-          regressionLabs
+          torchvision
           pandas
           pydot
           pytorch
+          wandb
+          hydra-core
           ipympl
           tqdm
           scikit-image
           pyqt6
           qtpy
+          gymnasium
+          regressionLabs
+          bbrl
         ];
+
         devPackages = with pkgs; [
           just
           (texlive.combine {
@@ -86,7 +144,23 @@
           qt6.qtwayland
           libglvnd
         ];
-        jupyterEnv = python.withPackages (ps: myPythonPackages);
+
+        afu = pythonPackages.buildPythonPackage {
+          pname = "afu";
+          version = "0.1.0";
+          format = "pyproject";
+
+          src = ./.;
+
+          propagatedBuildInputs = with pythonPackages; [
+            pytorch
+            bbrl
+          ];
+
+          doCheck = false;
+          pythonImportsCheck = ["afu"];
+        };
+        jupyterEnv = python.withPackages (ps: myPythonPackages ++ [afu]);
       in {
         packages = {
           default = jupyterEnv;
@@ -96,7 +170,7 @@
           program = "${jupyterEnv}/bin/jupyter-lab";
         };
         devShells.default = pkgs.mkShell {
-          buildInputs = myPythonPackages ++ devPackages;
+          buildInputs = myPythonPackages ++ [afu] ++ devPackages;
 
           shellHook = ''
             export QT_QPA_PLATFORM=xcb
