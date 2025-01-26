@@ -1,5 +1,5 @@
 run *ARGS:
-    python scripts.train
+    python -m scripts.train
 
 test:
     pytest
