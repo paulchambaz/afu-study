@@ -170,7 +170,7 @@
           program = "${jupyterEnv}/bin/jupyter-lab";
         };
         devShells.default = pkgs.mkShell {
-          buildInputs = myPythonPackages ++ [afu] ++ devPackages;
+          buildInputs = myPythonPackages ++ devPackages;
 
           shellHook = ''
             export QT_QPA_PLATFORM=xcb
