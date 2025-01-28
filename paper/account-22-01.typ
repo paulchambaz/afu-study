@@ -5,8 +5,8 @@
   title: [Compte Rendu de Réunion 1],
   course: [Projet #smallcaps[Ai2d]],
   authors: ("Paul Chambaz", "Frédéric Li Combeau"),
-  university: [ Sorbonne Université ],
-  reference: [ Master #smallcaps[Ai2d] M1 -- 22 janvier 2025 ],
+  university: [Sorbonne Université],
+  reference: [Master #smallcaps[Ai2d] M1 -- 22 janvier 2025],
 )
 
 == Présentation du Projet
