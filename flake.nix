@@ -92,6 +92,7 @@
           pylint
           moviepy
           numpy
+          pre-commit-hooks
           pillow
           matplotlib
           scipy
