@@ -7,4 +7,4 @@ from . import base
 from . import afu_alpha
 from . import afu_beta
 
-__all__ = ['actors', 'critics', 'memory', 'sac', 'td3', 'base', 'afu_alpha', 'afu_beta']
+__all__ = ["actors", "critics", "memory", "sac", "td3", "base", "afu_alpha", "afu_beta"]

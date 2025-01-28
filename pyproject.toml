@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "AFU - RL Library"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["torch", "bbrl"]
 
 [build-system]
 requires = ["setuptools>=45", "wheel"]
@@ -12,3 +11,70 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["afu"]
+
+[tool.black]
+line-length = 88
+target-version = ['py312']
+include = '\.pyi?$'
+extend-exclude = '\.ipynb$'
+color = true
+
+[tool.pylint]
+max-line-length = 88
+disable = [
+  "C0111", # missing-docstring
+  "R0903", # too-few-public-methods
+  "C0103", # invalid-name
+]
+good-names = [
+  "i",
+  "j",
+  "k",
+  "ex",
+  "Run",
+  "_",
+  "x",
+  "y",
+  "z",
+  "e",
+  "n",
+  "m",
+  "f",
+]
+ignore = ["CVS"]
+ignore-patterns = [".*"]
+init-hook = 'import sys; sys.path.append(".")'
+persistent = "yes"
+fail-under = 9.0
+output-format = "colorized"
+msg-template = "{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"
+
+[tool.pytest]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+showlocals = true
+addopts = """
+    --color=yes
+    --code-highlight=yes
+    --verbosity=2
+    --cov=afu
+    --cov-report=term-missing
+    --cov-report=html
+    """
+
+[tool.coverage.run]
+branch = true
+source = ["afu"]
+omit = ["tests/*", "setup.py"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_empty = true
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "if __name__ == .__main__.:",
+  "raise NotImplementedError",
+  "if TYPE_CHECKING:",
+]

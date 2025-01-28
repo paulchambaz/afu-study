@@ -89,8 +89,8 @@
         myPythonPackages = with pythonPackages; [
           pytest
           black
+          pylint
           moviepy
-          flake8
           numpy
           pillow
           matplotlib

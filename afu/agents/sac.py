@@ -14,4 +14,4 @@ class CriticAgent:
         print("critic agent step")
 
 
-__all__ = ['ActorAgent', 'CriticAgent']
+__all__ = ["ActorAgent", "CriticAgent"]
