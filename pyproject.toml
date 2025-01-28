@@ -4,6 +4,11 @@ version = "0.1.0"
 description = "AFU - RL Library"
 readme = "README.md"
 requires-python = ">=3.12"
+license = { text = "GPLv3" }
+authors = [
+  { name = "Paul Chambaz", email = "paul.chambaz@tutanota.com" },
+  { name = "Frédéric Li Combeau", email = "fredlicombeau@gmail.com" },
+]
 
 [build-system]
 requires = ["setuptools>=45", "wheel"]
@@ -21,11 +26,7 @@ color = true
 
 [tool.pylint]
 max-line-length = 88
-disable = [
-  "C0111", # missing-docstring
-  "R0903", # too-few-public-methods
-  "C0103", # invalid-name
-]
+disable = ["C0111", "R0903", "C0103"]
 good-names = [
   "i",
   "j",
