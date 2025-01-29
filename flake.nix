@@ -93,6 +93,9 @@
           moviepy
           numpy
           pre-commit-hooks
+          pygame
+          imageio
+          imageio-ffmpeg
           pillow
           matplotlib
           scipy
@@ -139,6 +142,7 @@
           libxkbcommon
           freetype
           dbus
+          ffmpeg
 
           qt6.full
           qt6.qtbase

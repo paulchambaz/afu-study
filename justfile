@@ -8,4 +8,4 @@ format:
     black .
 
 lint:
-    flake8
+  pylint afu

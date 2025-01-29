@@ -18,14 +18,14 @@ build-backend = "setuptools.build_meta"
 packages = ["afu"]
 
 [tool.black]
-line-length = 88
+line-length = 82
 target-version = ['py312']
 include = '\.pyi?$'
 extend-exclude = '\.ipynb$'
 color = true
 
 [tool.pylint]
-max-line-length = 88
+max-line-length = 82
 disable = ["C0111", "R0903", "C0103"]
 good-names = [
   "i",
