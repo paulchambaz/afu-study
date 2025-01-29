@@ -2,22 +2,27 @@ from afu.agents.sac import SACAgent
 from afu.environments.mountaincar import MountainCarEnv
 from omegaconf import OmegaConf
 
+
 def run_sac(sac):
     cfg = sac.cfg
     logger = sac.logger
-    
+
     # Get initial entropy coefficient
     ent_coef = cfg.algorithm.init_entropy_coef
     tau = cfg.algorithm.tau_target
-    
+
     # Setup agents and critics
     t_actor = TemporalAgent(sac.train_policy)
     t_q_agents = TemporalAgent(Agents(sac.critic_1, sac.critic_2))
-    t_target_q_agents = TemporalAgent(Agents(sac.target_critic_1, sac.target_critic_2))
-    
+    t_target_q_agents = TemporalAgent(
+        Agents(sac.target_critic_1, sac.target_critic_2)
+    )
+
     # Setup optimizers
     actor_optimizer = setup_optimizer(cfg.actor_optimizer, sac.actor)
-    critic_optimizer = setup_optimizer(cfg.critic_optimizer, sac.critic_1, sac.critic_2)
+    critic_optimizer = setup_optimizer(
+        cfg.critic_optimizer, sac.critic_1, sac.critic_2
+    )
     entropy_coef_optimizer, log_entropy_coef = setup_entropy_optimizers(cfg)
 
     # Training loop
@@ -32,7 +37,7 @@ def run_sac(sac):
             t_q_agents,
             t_target_q_agents,
             rb,
-            ent_coef
+            ent_coef,
         )
         (critic_loss_1 + critic_loss_2).backward()
         critic_optimizer.step()
@@ -47,7 +52,9 @@ def run_sac(sac):
         if entropy_coef_optimizer:
             entropy_coef_optimizer.zero_grad()
             action_logprobs = rb["action_logprobs"][0].detach()
-            entropy_coef_loss = -(log_entropy_coef.exp() * (action_logprobs + sac.target_entropy)).mean()
+            entropy_coef_loss = -(
+                log_entropy_coef.exp() * (action_logprobs + sac.target_entropy)
+            ).mean()
             entropy_coef_loss.backward()
             entropy_coef_optimizer.step()
             ent_coef = log_entropy_coef.exp().item()
@@ -57,7 +64,9 @@ def run_sac(sac):
         soft_update(sac.critic_2, sac.target_critic_2, tau)
 
         # Log metrics
-        logger.add_log("critic_loss", (critic_loss_1 + critic_loss_2).item(), sac.nb_steps)
+        logger.add_log(
+            "critic_loss", (critic_loss_1 + critic_loss_2).item(), sac.nb_steps
+        )
         logger.add_log("actor_loss", actor_loss.item(), sac.nb_steps)
         logger.add_log("entropy_coef", ent_coef, sac.nb_steps)
 
@@ -69,6 +78,7 @@ def run_sac(sac):
 
     return sac
 
+
 def evaluate_policy(policy, env, episodes=5):
     """Quick and dirty evaluation - just average reward over a few episodes"""
     total_reward = 0
@@ -76,15 +86,20 @@ def evaluate_policy(policy, env, episodes=5):
         obs, _ = env.reset()
         done = False
         while not done:
-            action = policy(obs, stochastic=False)  # Deterministic actions for evaluation
+            action = policy(
+                obs, stochastic=False
+            )  # Deterministic actions for evaluation
             obs, reward, done, _, _ = env.step(action)
             total_reward += reward
     return total_reward / episodes
 
+
 def main():
     # Create environment
-    env = MountainCarEnv(render_mode=None)  # None for training, "human" for visualization
-    
+    env = MountainCarEnv(
+        render_mode=None
+    )  # None for training, "human" for visualization
+
     # Set basic SAC parameters
     params = {
         "algorithm": {
@@ -115,17 +130,18 @@ def main():
             "lr": 3e-4,
         },
     }
-    
+
     # Create agent and start training
     cfg = OmegaConf.create(params)
     sac_agent = SACAgent(env.state_dim, env.action_dim, cfg)
     run_sac(sac_agent)
-    
+
     # Test final policy
     env = MountainCarEnv(render_mode="human")  # Create new env with rendering
     eval_reward = evaluate_policy(sac_agent.eval_policy, env, episodes=3)
     print(f"Final evaluation reward: {eval_reward}")
     env.close()
+
 
 if __name__ == "__main__":
     main()
