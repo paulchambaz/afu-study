@@ -142,7 +142,10 @@ class Continuous_MountainCarEnv(gym.Env):
         self.isopen = True
 
         self.action_space = spaces.Box(
-            low=self.min_action, high=self.max_action, shape=(1,), dtype=np.float32
+            low=self.min_action,
+            high=self.max_action,
+            shape=(1,),
+            dtype=np.float32,
         )
         self.observation_space = spaces.Box(
             low=self.low_state, high=self.high_state, dtype=np.float32
@@ -186,7 +189,9 @@ class Continuous_MountainCarEnv(gym.Env):
         # truncation=False as the time limit is handled by the `TimeLimit` wrapper added during `make`
         return self.state, reward, terminated, False, {}
 
-    def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None):
+    def reset(
+        self, *, seed: Optional[int] = None, options: Optional[dict] = None
+    ):
         super().reset(seed=seed)
         # Note that if you use custom reset bounds, it may lead to out-of-bound
         # state/observations.
@@ -226,7 +231,9 @@ class Continuous_MountainCarEnv(gym.Env):
                     (self.screen_width, self.screen_height)
                 )
             else:  # mode == "rgb_array":
-                self.screen = pygame.Surface((self.screen_width, self.screen_height))
+                self.screen = pygame.Surface(
+                    (self.screen_width, self.screen_height)
+                )
         if self.clock is None:
             self.clock = pygame.time.Clock()
 
@@ -270,10 +277,18 @@ class Continuous_MountainCarEnv(gym.Env):
             )
 
             gfxdraw.aacircle(
-                self.surf, wheel[0], wheel[1], int(carheight / 2.5), (128, 128, 128)
+                self.surf,
+                wheel[0],
+                wheel[1],
+                int(carheight / 2.5),
+                (128, 128, 128),
             )
             gfxdraw.filled_circle(
-                self.surf, wheel[0], wheel[1], int(carheight / 2.5), (128, 128, 128)
+                self.surf,
+                wheel[0],
+                wheel[1],
+                int(carheight / 2.5),
+                (128, 128, 128),
             )
 
         flagx = int((self.goal_position - self.min_position) * scale)

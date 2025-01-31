@@ -22,8 +22,15 @@ class ContinuousCartPoleEnv(CartPoleEnv):
             self.min_action, self.max_action, shape=(1,), dtype=np.float64
         )
 
-    def set_state(self, cart_position, cart_velocity, pole_angle, pole_angular_velocity):
-        self.state = (cart_position, cart_velocity, pole_angle, pole_angular_velocity)
+    def set_state(
+        self, cart_position, cart_velocity, pole_angle, pole_angular_velocity
+    ):
+        self.state = (
+            cart_position,
+            cart_velocity,
+            pole_angle,
+            pole_angular_velocity,
+        )
 
     def step(self, action):
         if action > self.max_action:
@@ -44,7 +51,8 @@ class ContinuousCartPoleEnv(CartPoleEnv):
             force + self.polemass_length * theta_dot**2 * sintheta
         ) / self.total_mass
         thetaacc = (self.gravity * sintheta - costheta * temp) / (
-            self.length * (4.0 / 3.0 - self.masspole * costheta**2 / self.total_mass)
+            self.length
+            * (4.0 / 3.0 - self.masspole * costheta**2 / self.total_mass)
         )
         xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
 
@@ -87,4 +95,10 @@ class ContinuousCartPoleEnv(CartPoleEnv):
 
         if self.render_mode == "human":
             self.render()
-        return np.array(self.state, dtype=np.float32), reward, terminated, False, {}
+        return (
+            np.array(self.state, dtype=np.float32),
+            reward,
+            terminated,
+            False,
+            {},
+        )
