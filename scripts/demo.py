@@ -2,6 +2,7 @@ from afu.agents.ddpg import DDPG
 from afu.agents.dqn import DQN
 import gymnasium as gym
 
+
 def demo_run(agent, env):
     env = gym.make(env, render_mode="human")
     observation, _ = env.reset()
@@ -20,6 +21,7 @@ def demo_run(agent, env):
 
     print(f"Demo completed on {env} with total reward: {total_reward}")
 
+
 def main() -> None:
     env_name = "CartPole-v1"
     dqn_agent = DQN.load_agent(f"weights/trained_{env_name}.pt")
@@ -36,6 +38,7 @@ def main() -> None:
     env_name = "MountainCarContinuousStudy-v0"
     ddpg_agent = DDPG.load_agent(f"weights/trained_{env_name}.pt")
     demo_run(ddpg_agent, env_name)
+
 
 if __name__ == "__main__":
     main()
