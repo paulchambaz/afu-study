@@ -86,6 +86,121 @@
           pythonImportsCheck = ["bbrl"];
         };
 
+        bbrl_gymnasium = pythonPackages.buildPythonPackage {
+          pname = "bbrl-gymnasium";
+          version = "0.3.7";
+          format = "setuptools";
+          src = pkgs.fetchurl {
+            url = "https://files.pythonhosted.org/packages/38/7f/86991c0690b7d14a7ccf29f99167465f444c3157b701cf7adcdfd598383a/bbrl_gymnasium-0.3.7.tar.gz";
+            sha256 = "sha256-ojjaJ2TPyYfl5gYQvwfDKqbZjfwvcKAkRztYykWQrEc=";
+          };
+          propagatedBuildInputs = with pythonPackages; [
+            numpy
+            gymnasium
+            bbrl
+            setuptools
+          ];
+          doCheck = false;
+        };
+
+        bbrl_utils = pythonPackages.buildPythonPackage rec {
+          pname = "bbrl-utils";
+          version = "0.10.3";
+          format = "pyproject";
+
+          src = pkgs.fetchurl {
+            url = "https://files.pythonhosted.org/packages/53/d7/e89c7dfb20e862e33a1570ccc81fda5cef3517415c704ab96572af2f9e80/bbrl_utils-0.10.3.tar.gz";
+            sha256 = "sha256-mt/IYLbhUqE4jcW/4//Ni8gxufWvHHgkoxiV1PeO0MI=";
+          };
+
+          nativeBuildInputs = with pythonPackages; [
+            setuptools
+            setuptools-scm
+          ];
+
+          SETUPTOOLS_SCM_PRETEND_VERSION = version;
+
+          propagatedBuildInputs = with pythonPackages; [
+            bbrl
+            bbrl_gymnasium
+            tensorboard
+            pygame
+          ];
+
+          preBuild = ''
+            export SETUPTOOLS_SCM_PRETEND_VERSION="${version}"
+          '';
+
+          doCheck = false;
+        };
+
+        mazemdp = pythonPackages.buildPythonPackage rec {
+          pname = "mazemdp";
+          version = "1.2.7";
+          format = "pyproject";
+
+          src = pkgs.fetchurl {
+            url = "https://files.pythonhosted.org/packages/09/15/3aec9e1b63243f180a395ecfe1bdb6e2890bcb1ee13b156c6d9ae24e5434/mazemdp-1.2.7.tar.gz";
+            sha256 = "sha256-mXaUZf3mR+FwOSFwlxJ4oPLGyQgdH1RgFRhngciBJvg=";
+          };
+
+          nativeBuildInputs = with pythonPackages; [
+            setuptools
+            setuptools-scm
+          ];
+
+          SETUPTOOLS_SCM_PRETEND_VERSION = version;
+
+          propagatedBuildInputs = with pythonPackages; [
+            bbrl
+            bbrl_gymnasium
+            tensorboard
+            pygame
+            ipyreact
+          ];
+
+          preBuild = ''
+            export SETUPTOOLS_SCM_PRETEND_VERSION="${version}"
+          '';
+
+          doCheck = false;
+        };
+
+        ipyreact = pythonPackages.buildPythonPackage rec {
+          pname = "ipyreact";
+          version = "0.5.0";
+          format = "pyproject";
+
+          src = pkgs.fetchPypi {
+            inherit pname version;
+            sha256 = "sha256-OYs3xXq789RToPtLs005lW8t4hInbeBTYwrZB+q96eU=";
+          };
+
+          nativeBuildInputs = with pythonPackages; [
+            setuptools
+            hatchling
+            hatch-vcs
+            hatch-jupyter-builder
+            jupyterlab
+          ];
+
+          propagatedBuildInputs = with pythonPackages; [
+            jupyterlab
+            jupyter-client
+            jupyterlab-widgets
+            jupyter-server
+            widgetsnbextension
+            ipywidgets
+          ];
+
+          prePatch = ''
+            substituteInPlace pyproject.toml \
+              --replace 'jupyterlab==3.*' 'jupyterlab>=3.0.0'
+          '';
+
+          doCheck = false;
+        };
+
         myPythonPackages = with pythonPackages; [
           pytest
           black
@@ -115,10 +230,16 @@
           tqdm
           scikit-image
           pyqt6
+          jax
           qtpy
           gymnasium
+          pybox2d
           regressionLabs
           bbrl
+          bbrl_utils
+          bbrl_gymnasium
+          mazemdp
+          ipyreact
         ];
 
         devPackages = with pkgs; [
@@ -137,6 +258,7 @@
           glib
           zlib
           libGL
+          box2d
           fontconfig
           xorg.libX11
           libxkbcommon

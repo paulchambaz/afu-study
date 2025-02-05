@@ -1,146 +1,83 @@
-from afu.agents.sac import SACAgent
-from afu.environments.mountaincar import MountainCarEnv
-from omegaconf import OmegaConf
+import gymnasium as gym
+import numpy as np
+import afu
+from afu.agents.dqn import DQN
 
 
-def run_sac(sac):
-    cfg = sac.cfg
-    logger = sac.logger
-
-    # Get initial entropy coefficient
-    ent_coef = cfg.algorithm.init_entropy_coef
-    tau = cfg.algorithm.tau_target
-
-    # Setup agents and critics
-    t_actor = TemporalAgent(sac.train_policy)
-    t_q_agents = TemporalAgent(Agents(sac.critic_1, sac.critic_2))
-    t_target_q_agents = TemporalAgent(
-        Agents(sac.target_critic_1, sac.target_critic_2)
-    )
-
-    # Setup optimizers
-    actor_optimizer = setup_optimizer(cfg.actor_optimizer, sac.actor)
-    critic_optimizer = setup_optimizer(
-        cfg.critic_optimizer, sac.critic_1, sac.critic_2
-    )
-    entropy_coef_optimizer, log_entropy_coef = setup_entropy_optimizers(cfg)
-
-    # Training loop
-    for rb in sac.iter_replay_buffers():
-        # Critic update
-        critic_optimizer.zero_grad()
-        critic_loss_1, critic_loss_2 = compute_critic_loss(
-            cfg,
-            rb.get("reward"),
-            rb.get("must_bootstrap"),
-            t_actor,
-            t_q_agents,
-            t_target_q_agents,
-            rb,
-            ent_coef,
-        )
-        (critic_loss_1 + critic_loss_2).backward()
-        critic_optimizer.step()
-
-        # Actor update
-        actor_optimizer.zero_grad()
-        actor_loss = compute_actor_loss(ent_coef, t_actor, t_q_agents, rb)
-        actor_loss.backward()
-        actor_optimizer.step()
-
-        # Update entropy coefficient if using auto mode
-        if entropy_coef_optimizer:
-            entropy_coef_optimizer.zero_grad()
-            action_logprobs = rb["action_logprobs"][0].detach()
-            entropy_coef_loss = -(
-                log_entropy_coef.exp() * (action_logprobs + sac.target_entropy)
-            ).mean()
-            entropy_coef_loss.backward()
-            entropy_coef_optimizer.step()
-            ent_coef = log_entropy_coef.exp().item()
-
-        # Soft update target networks
-        soft_update(sac.critic_1, sac.target_critic_1, tau)
-        soft_update(sac.critic_2, sac.target_critic_2, tau)
-
-        # Log metrics
-        logger.add_log(
-            "critic_loss", (critic_loss_1 + critic_loss_2).item(), sac.nb_steps
-        )
-        logger.add_log("actor_loss", actor_loss.item(), sac.nb_steps)
-        logger.add_log("entropy_coef", ent_coef, sac.nb_steps)
-
-        # Simple evaluation every 1000 steps
-        if sac.nb_steps % 1000 == 0:
-            eval_reward = evaluate_policy(sac.eval_policy, sac.eval_env)
-            logger.add_log("eval_reward", eval_reward, sac.nb_steps)
-            print(f"Step {sac.nb_steps}: Eval reward = {eval_reward}")
-
-    return sac
-
-
-def evaluate_policy(policy, env, episodes=5):
-    """Quick and dirty evaluation - just average reward over a few episodes"""
+def mountain_car_demo(agent):
+    env = gym.make("MountainCar-v0", render_mode="human")
+    observation, _ = env.reset()
+    done = False
     total_reward = 0
-    for _ in range(episodes):
-        obs, _ = env.reset()
-        done = False
-        while not done:
-            action = policy(
-                obs, stochastic=False
-            )  # Deterministic actions for evaluation
-            obs, reward, done, _, _ = env.step(action)
-            total_reward += reward
-    return total_reward / episodes
+
+    while not done:
+        action = agent.select_action(observation, evaluation=True)
+        observation, reward, terminated, truncated, info = env.step(action)
+        done = terminated or truncated
+        total_reward += reward
+        
+        env.render()
+
+    env.close()
+
+    print(f"Demo completed with total reward: {total_reward}")
+    
+def cartpole_demo(agent):
+    env = gym.make("CartPole-v1", render_mode="human")
+    observation, _ = env.reset()
+    done = False
+    total_reward = 0
+
+    while not done:
+        action = agent.select_action(observation, evaluation=True)
+        observation, reward, terminated, truncated, info = env.step(action)
+        done = terminated or truncated
+        total_reward += reward
+        
+        env.render()
+
+    env.close()
+
+    print(f"Demo completed with total reward: {total_reward}")
 
 
-def main():
-    # Create environment
-    env = MountainCarEnv(
-        render_mode=None
-    )  # None for training, "human" for visualization
-
-    # Set basic SAC parameters
+def main() -> None:
     params = {
-        "algorithm": {
-            "seed": 42,
-            "n_envs": 1,
-            "n_steps": 100,
-            "batch_size": 256,
-            "learning_starts": 1000,
-            "discount_factor": 0.99,
-            "entropy_mode": "auto",
-            "init_entropy_coef": 0.1,
-            "tau_target": 0.005,
-            "architecture": {
-                "actor_hidden_size": [64, 64],
-                "critic_hidden_size": [64, 64],
-            },
-        },
-        "actor_optimizer": {
-            "classname": "torch.optim.Adam",
-            "lr": 3e-4,
-        },
-        "critic_optimizer": {
-            "classname": "torch.optim.Adam",
-            "lr": 3e-4,
-        },
-        "entropy_coef_optimizer": {
-            "classname": "torch.optim.Adam",
-            "lr": 3e-4,
-        },
+        "env_name": "MountainCar-v0", # Which environment to train on
+
+        "hidden_size": [128, 128], # Two hidden layers of size 128 each
+        "learning_rate": 1e-3,     # Standard learning rate for Adam optimizer
+
+        "batch_size": 128,         # How many transitions to sample for each update
+        "replay_size": 100_000,    # Maximum transitions to store in replay buffer
+        "target_update": 1000,     # Update target network every N steps
+        "gamma": 0.99,             # Standard discount factor for RL
+
+        "epsilon_start": 1.0,      # Start with 100% random actions
+        "epsilon_end": 0.05,       # End with 5% random actions
+        "epsilon_decay": 5000,     # Decay exploration over this many steps
+
+        "max_episodes": 1000,      # Maximum number of episodes to train
+        "max_steps": 500,          # Maximum steps per episode
     }
 
-    # Create agent and start training
-    cfg = OmegaConf.create(params)
-    sac_agent = SACAgent(env.state_dim, env.action_dim, cfg)
-    run_sac(sac_agent)
+    agent = DQN(params)
+    metrics = agent.train()
 
-    # Test final policy
-    env = MountainCarEnv(render_mode="human")  # Create new env with rendering
-    eval_reward = evaluate_policy(sac_agent.eval_policy, env, episodes=3)
-    print(f"Final evaluation reward: {eval_reward}")
-    env.close()
+    final_avg_reward = np.mean(metrics['episode_rewards'][-100:])
+    print(f"Training completed. Final average reward: {final_avg_reward:.2f}")
+
+    save_path = "trained_dqn_agent_mountaincar.pt"
+    agent.save(save_path)
+
+    print("\nRunning demonstrations...")
+    for i in range(2):
+        print(f"\nDemo {i+1}:")
+        mountain_car_demo(agent)
+
+    loaded_agent = DQN.load_agent(save_path)
+    for _ in range(10):
+        mountain_car_demo(loaded_agent)
 
 
 if __name__ == "__main__":
