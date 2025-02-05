@@ -6,7 +6,7 @@
   course: [Projet #smallcaps[Ai2d]],
   authors: ("Paul Chambaz", "Frédéric Li Combeau"),
   university: [Sorbonne Université],
-  reference: [Master #smallcaps[Ai2d] M1 -- 04 février 2025],
+  reference: [Master #smallcaps[Ai2d] M1 -- 05 février 2025],
 )
 
 == Points administratifs
