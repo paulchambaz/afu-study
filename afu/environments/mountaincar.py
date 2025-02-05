@@ -1,5 +1,8 @@
-from gymnasium.envs.classic_control.continuous_mountain_car import Continuous_MountainCarEnv
+from gymnasium.envs.classic_control.continuous_mountain_car import (
+    Continuous_MountainCarEnv,
+)
 from gymnasium.envs.registration import register
+
 
 class ContinuousMountainCarEnvStudy(Continuous_MountainCarEnv):
     def set_state(self, car_position, car_velocity):

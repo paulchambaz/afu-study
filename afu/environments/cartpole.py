@@ -1,5 +1,6 @@
-from bbrl_gymnasium.envs.continuous_cartpole import ContinuousCartPoleEnv # type: ignore
+from bbrl_gymnasium.envs.continuous_cartpole import ContinuousCartPoleEnv  # type: ignore
 from gymnasium.envs.registration import register
+
 
 class ContinuousCartPoleEnvStudy(ContinuousCartPoleEnv):
     def set_state(
@@ -11,6 +12,7 @@ class ContinuousCartPoleEnvStudy(ContinuousCartPoleEnv):
             pole_angle,
             pole_angular_velocity,
         )
+
 
 register(
     id="CartPoleContinuousStudy-v0",
