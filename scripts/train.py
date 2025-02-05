@@ -44,21 +44,17 @@ def cartpole_demo(agent):
 def main() -> None:
     params = {
         "env_name": "MountainCar-v0", # Which environment to train on
-
-        "hidden_size": [128, 128], # Two hidden layers of size 128 each
-        "learning_rate": 1e-3,     # Standard learning rate for Adam optimizer
-
-        "batch_size": 128,         # How many transitions to sample for each update
-        "replay_size": 100_000,    # Maximum transitions to store in replay buffer
-        "target_update": 1000,     # Update target network every N steps
-        "gamma": 0.99,             # Standard discount factor for RL
-
-        "epsilon_start": 1.0,      # Start with 100% random actions
-        "epsilon_end": 0.05,       # End with 5% random actions
-        "epsilon_decay": 5000,     # Decay exploration over this many steps
-
-        "max_episodes": 1000,      # Maximum number of episodes to train
-        "max_steps": 500,          # Maximum steps per episode
+        "hidden_size": [128, 128],    # Two hidden layers of size 128 each
+        "learning_rate": 1e-3,        # Standard learning rate for Adam optimizer
+        "batch_size": 128,            # How many transitions to sample for each update
+        "replay_size": 100_000,       # Maximum transitions to store in replay buffer
+        "target_update": 1000,        # Update target network every N steps
+        "gamma": 0.99,                # Standard discount factor for RL
+        "epsilon_start": 1.0,         # Start with 100% random actions
+        "epsilon_end": 0.05,          # End with 5% random actions
+        "epsilon_decay": 5000,        # Decay exploration over this many steps
+        "max_episodes": 1000,         # Maximum number of episodes to train
+        "max_steps": 500,             # Maximum steps per episode
     }
 
     agent = DQN(params)
