@@ -22,15 +22,21 @@ class Actor(Agent):
 
     def forward(self, t: int) -> None:
         obs = self.get(("env/env_obs", t))
+
         action = self.model(obs)
         self.set(("action", t), action)
 
 
 class Critic(Agent):
     def __init__(
-        self, state_dim: int, hidden_size: list[int], action_dim: int
+        self,
+        state_dim: int,
+        hidden_size: list[int],
+        action_dim: int,
+        prefix: str,
     ) -> None:
         super().__init__()
+        self.prefix = prefix
 
         self.model = build_mlp(
             [state_dim + action_dim] + hidden_size + [1], activation=nn.ReLU()
@@ -90,10 +96,15 @@ class DDPG:
         )
         self.target_actor.load_state_dict(self.actor.state_dict())
 
-        self.critic = Critic(state_dim, params["critic_hidden_size"], action_dim)
+        self.critic = Critic(
+            state_dim, params["critic_hidden_size"], action_dim, prefix="critic/"
+        )
         self.target_critic = Critic(
-            state_dim, params["critic_hidden_size"], action_dim
-        ).with_prefix("target_critic/")
+            state_dim,
+            params["critic_hidden_size"],
+            action_dim,
+            prefix="target_critic/",
+        )
         self.target_critic.load_state_dict(self.critic.state_dict())
 
         self.noise = GaussianNoise(action_dim, params["noise_std"])
@@ -103,7 +114,7 @@ class DDPG:
             self.actor.parameters(), lr=params["actor_lr"]
         )
         self.critic_optimizer = torch.optim.Adam(
-            self.actor.parameters(), lr=params["critic_lr"]
+            self.critic.parameters(), lr=params["critic_lr"]
         )
 
         self.total_steps = 0
@@ -123,7 +134,8 @@ class DDPG:
         self, state: np.ndarray, evaluation: bool = False
     ) -> np.ndarray:
         workspace = Workspace()
-        workspace.set("env/env_obs", 0, torch.FloatTensor([state]))
+        state_tensor = torch.FloatTensor(state)
+        workspace.set("env/env_obs", 0, state_tensor)
 
         self.actor(workspace, t=0)
         action = workspace.get("action", 0).detach().numpy()
@@ -160,7 +172,7 @@ class DDPG:
         workspace.set("env/env_obs", 0, states)
         workspace.set("action", 0, actions)
         self.critic(workspace, t=0)
-        current_q = workspace.get("critic/q_value", 0)
+        current_q = workspace.get(f"{self.critic.prefix}q_value", 0)
 
         return nn.MSELoss()(current_q, target_q)
 
@@ -183,7 +195,7 @@ class DDPG:
 
         states, actions, rewards, next_states, dones = self.replay_buffer.sample(
             self.params["batch_size"],
-            True,
+            continuous=True,
         )
 
         critic_loss = self._compute_critic_loss(

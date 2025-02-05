@@ -34,20 +34,26 @@ class ReplayBuffer:
         # into separate arrays for states, actions, rewards, etc.
         batch = list(zip(*transitions))
 
+        # Convert to numpy arrays first to ensure consistent shapes
+        _states = np.array(batch[0])
+        _actions = np.array(batch[1])
+        _rewards = np.array(batch[2])
+        _next_states = np.array(batch[3])
+        _dones = np.array(batch[4])
+
         # Convert the arrays into PyTorch tensors with appropriate types for training.
         # States and next_states are converted to floating point tensors.
         # Actions are converted to long tensors for discrete action spaces.
         # Rewards and done flags are converted to floating point tensors.
-        states = torch.FloatTensor(np.array(batch[0]))
-        # TODO: this should either be a FloatTensor or a LongTensor depending on if the action space is continuous
+        states = torch.FloatTensor(_states)
         actions = (
-            torch.FloatTensor(batch[1])
+            torch.FloatTensor(_actions.reshape(batch_size, -1))
             if continuous
-            else torch.LongTensor(batch[1])
+            else torch.LongTensor(_actions)
         )
-        rewards = torch.FloatTensor(batch[2])
-        next_states = torch.FloatTensor(np.array(batch[3]))
-        dones = torch.FloatTensor(batch[4])
+        rewards = torch.FloatTensor(_rewards)
+        next_states = torch.FloatTensor(_next_states)
+        dones = torch.FloatTensor(_dones)
 
         return states, actions, rewards, next_states, dones
 

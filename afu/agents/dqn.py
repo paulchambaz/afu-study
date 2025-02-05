@@ -135,7 +135,7 @@ class DQN:
         # Sample a batch of transitions from replay buffer for training
         states, actions, rewards, next_states, dones = self.replay_buffer.sample(
             self.params["batch_size"],
-            False,
+            continuous=False,
         )
 
         # Compute current Q-values using Q-network. We use workspace to interact

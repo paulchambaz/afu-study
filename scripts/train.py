@@ -1,6 +1,5 @@
 import gymnasium as gym
 import numpy as np
-import afu
 from afu.agents.dqn import DQN
 from afu.agents.ddpg import DDPG
 
@@ -25,8 +24,9 @@ def demo_run(agent, env):
 
 
 def dqn_demo() -> None:
+    env_name = "MountainCar-v0"
     params = {
-        "env_name": "MountainCar-v0",  # Which environment to train on
+        "env_name": env_name,  # Which environment to train on
         "hidden_size": [128, 128],  # Two hidden layers of size 126 each
         "learning_rate": 1e-3,  # Standard learning rate for Adam optimizer
         "batch_size": 128,  # How many transitions to sample for each update
@@ -46,22 +46,24 @@ def dqn_demo() -> None:
     final_avg_reward = np.mean(metrics["episode_rewards"][-100:])
     print(f"Training completed. Final average reward: {final_avg_reward:.2f}")
 
-    save_path = "trained_dqn_agent_cartpole.pt"
+    save_path = f"weights/trained_{env_name}.pt"
     agent.save(save_path)
 
     print("\nRunning demonstrations...")
     for i in range(2):
         print(f"\nDemo {i+1}:")
-        demo_run(agent, "CartPole-v1")
+        demo_run(agent, env_name)
 
     loaded_agent = DQN.load_agent(save_path)
     for _ in range(3):
-        demo_run(loaded_agent, "CartPole-v1")
+        demo_run(loaded_agent, env_name)
 
 
 def ddpg_demo() -> None:
+    # env_name = "MountainCarContinuousStudy-v0"
+    env_name = "CartPoleContinuousStudy-v0"
     params = {
-        "env_name": "CartPoleContinuousStudy-v0",  # Which environment to train on
+        "env_name": env_name,  # Which environment to train on
         "actor_hidden_size": [
             128,
             128,
@@ -87,17 +89,17 @@ def ddpg_demo() -> None:
     final_avg_reward = np.mean(metrics["episode_rewards"][-100:])
     print(f"Training completed. Final average reward: {final_avg_reward:.2f}")
 
-    save_path = "trained_dqn_agent_mountaincar.pt"
+    save_path = f"weights/trained_{env_name}.pt"
     agent.save(save_path)
 
     print("\nRunning demonstrations...")
     for i in range(2):
         print(f"\nDemo {i+1}:")
-        demo_run(agent, "CartPoleContinuousStudy-v0")
+        demo_run(agent, env_name)
 
-    loaded_agent = DQN.load_agent(save_path)
+    loaded_agent = DDPG.load_agent(save_path)
     for _ in range(3):
-        demo_run(loaded_agent, "CartPoleContinuousStudy-v0")
+        demo_run(loaded_agent, env_name)
 
 
 def main() -> None:
