@@ -105,7 +105,6 @@ def train_demo(algo, env_name) -> None:
         "max_episodes": 1000,  # Maximum number of episodes to train
         "max_steps": 500,  # Maximum steps per episode
         "noise_std": 0.1,  # Gaussian noise standard deviation
-
         "actor_hidden_size": [
             128,
             128,
