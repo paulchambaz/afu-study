@@ -201,6 +201,69 @@
           doCheck = false;
         };
 
+        tensorboardX = pythonPackages.buildPythonPackage {
+          pname = "tensorboardX";
+          version = "2.6.2.2";
+          format = "setuptools";
+
+          src = pkgs.fetchurl {
+            url = "https://files.pythonhosted.org/packages/02/9b/c2b5aba53f5e27ffcf249fc38485836119638f97d20b978664b15f97c8a6/tensorboardX-2.6.2.2.tar.gz";
+            sha256 = "sha256-xkdtfNDVKbC3L0rK2xJp+e2LIvRB6HqE8qO5QLuHtmY=";
+          };
+
+          nativeBuildInputs = with pythonPackages; [
+            setuptools
+            setuptools-scm
+          ];
+
+          propagatedBuildInputs = with pythonPackages; [
+            numpy
+            protobuf
+            six
+            packaging
+          ];
+
+          SETUPTOOLS_SCM_PRETEND_VERSION = "2.6.2.2";
+
+          # Add this to handle setuptools_scm
+          preBuild = ''
+            export SETUPTOOLS_SCM_PRETEND_VERSION="2.6.2.2"
+          '';
+
+          doCheck = false;
+        };
+
+        afu-rljax = pythonPackages.buildPythonPackage {
+          pname = "afu-rljax";
+          version = "0.0.6";
+          format = "setuptools";
+
+          src = pkgs.fetchFromGitHub {
+            owner = "perrin-isir";
+            repo = "afu";
+            rev = "main";
+            sha256 = "sha256-T2SUevL/omsKVrZq1TabAbKZkFd5O5feMoWtUgWIVwI=";
+          };
+
+          propagatedBuildInputs = with pythonPackages; [
+            jax
+            optax
+            dm-haiku
+            tensorboard
+            joblib
+            gymnasium
+            # pkgs.python312Packages.mujoco
+            tensorboardX
+            numpy
+            pandas
+            imageio
+            matplotlib
+            pkgs.mujoco
+          ];
+
+          doCheck = false;
+        };
+
         myPythonPackages = with pythonPackages; [
           pytest
           black
@@ -240,6 +303,7 @@
           bbrl_gymnasium
           mazemdp
           ipyreact
+          afu-rljax
         ];
 
         devPackages = with pkgs; [

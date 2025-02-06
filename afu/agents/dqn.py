@@ -8,6 +8,7 @@ from bbrl_utils.nn import build_mlp  # type: ignore
 from bbrl.workspace import Workspace  # type: ignore
 from gymnasium.spaces import Discrete  # type: ignore
 from .memory import ReplayBuffer
+from tqdm import tqdm
 
 
 class DiscreteQNetwork(Agent):
@@ -112,7 +113,7 @@ class DQN:
         # Use workspace to get Q-values from our network. This is BBRL's way of
         # passing data between agents - the workspace acts like a shared memory.
         workspace = Workspace()
-        workspace.set("env/env_obs", 0, torch.FloatTensor([state]))
+        workspace.set("env/env_obs", 0, torch.FloatTensor(state))
         self.q_network(workspace, t=0)
         q_values = workspace.get("q_values", 0)
 
@@ -189,9 +190,10 @@ class DQN:
 
         # Track rewards for performance monitoring
         episode_rewards = []
+        progress = tqdm(range(self.params["max_episodes"]), desc="Training")
 
         # Each episode is one complete run through the environment
-        for episode in range(self.params["max_episodes"]):
+        for episode in progress:
             state, _ = self.train_env.reset()
             episode_reward = 0.0
 
@@ -222,9 +224,11 @@ class DQN:
             # Store episode reward and periodically print progress
             episode_rewards.append(episode_reward)
 
-            if (episode + 1) % 10 == 0:
+            if len(episode_rewards) >= 10:
                 avg_reward = np.mean(episode_rewards[-10:])
-                print(f"Episode {episode + 1}, Average Reward: {avg_reward:.2f}")
+                progress.set_postfix(
+                    {"avg_reward": f"{avg_reward:.2f}"}, refresh=True
+                )
 
         return {"episode_rewards": episode_rewards}
 

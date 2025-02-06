@@ -6,6 +6,7 @@ from bbrl.agents import Agent  # type: ignore
 from bbrl_utils.nn import build_mlp  # type: ignore
 from bbrl.workspace import Workspace  # type: ignore
 from .memory import ReplayBuffer
+from tqdm import tqdm
 
 
 class Actor(Agent):
@@ -218,8 +219,8 @@ class DDPG:
 
     def train(self) -> dict:
         episode_rewards = []
-
-        for episode in range(self.params["max_episodes"]):
+        progress = tqdm(range(self.params["max_episodes"]), desc="Training")
+        for episode in progress:
             state, _ = self.train_env.reset()
             episode_reward = 0.0
             self.noise.reset()
@@ -237,7 +238,6 @@ class DDPG:
 
                 self.replay_buffer.push(state, action, reward, next_state, done)
                 _, _ = self.update()
-
                 state = next_state
                 episode_reward += float(reward)
                 self.total_steps += 1
@@ -247,9 +247,12 @@ class DDPG:
 
             episode_rewards.append(episode_reward)
 
-            if (episode + 1) % 10 == 0:
+            # Update progress bar with rolling average reward
+            if len(episode_rewards) >= 10:
                 avg_reward = np.mean(episode_rewards[-10:])
-                print(f"Episode {episode + 1}, Average Reward: {avg_reward:.2f}")
+                progress.set_postfix(
+                    {"avg_reward": f"{avg_reward:.2f}"}, refresh=True
+                )
 
         return {"episode_rewards": episode_rewards}
 
