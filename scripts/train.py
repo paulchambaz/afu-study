@@ -137,49 +137,6 @@ def train_demo(algo, env_name) -> None:
         demo_run(loaded_agent, env_name)
 
 
-# def ddpg_demo() -> None:
-#     # env_name = "MountainCarContinuousStudy-v0"
-#     env_name = "CartPoleContinuousStudy-v0"
-#     params = {
-#         "env_name": env_name,  # Which environment to train on
-#         "actor_hidden_size": [
-#             128,
-#             128,
-#         ],  # Two hidden layers of size 128 each for the actor
-#         "critic_hidden_size": [
-#             128,
-#             128,
-#         ],  # Two hidden layers of size 128 each for the critic
-#         "actor_lr": 1e-3,  # Standard learning rate for Adam optimizer for the actor
-#         "critic_lr": 1e-3,  # Standard learning rate for Adam optimizer for the critic
-#         "batch_size": 128,  # How many transitions to sample for each update
-#         "replay_size": 100_000,  # Maximum transitions to store in replay buffer
-#         "tau": 0.005,  # Soft update parameter
-#         "gamma": 0.99,  # Standard discount factor for RL
-#         "noise_std": 0.1,  # Gaussian noise standard deviation
-#         "max_episodes": 1000,  # Maximum number of episodes to train
-#         "max_steps": 500,  # Maximum steps per episode
-#     }
-#
-#     agent = DDPG(params)
-#     metrics = agent.train()
-#
-#     final_avg_reward = np.mean(metrics["episode_rewards"][-100:])
-#     print(f"Training completed. Final average reward: {final_avg_reward:.2f}")
-#
-#     save_path = f"weights/trained_{env_name}.pt"
-#     agent.save(save_path)
-#
-#     print("\nRunning demonstrations...")
-#     for i in range(2):
-#         print(f"\nDemo {i+1}:")
-#         demo_run(agent, env_name)
-#
-#     loaded_agent = DDPG.load_agent(save_path)
-#     for _ in range(3):
-#         demo_run(loaded_agent, env_name)
-
-
 def main() -> None:
     # train_demo(DQN, "MountainCar-v0")
     train_demo(DDPG, "CartPoleContinuousStudy-v0")
