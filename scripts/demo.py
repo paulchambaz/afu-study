@@ -2,12 +2,8 @@ from afu.agents.ddpg import DDPG
 from afu.agents.dqn import DQN
 import gymnasium as gym
 from afu_rljax.algorithm import AFU  # type: ignore
+import jax.numpy as jnp
 import pickle
-
-
-def load_afu_model(path):
-    with open(path, "rb") as f:
-        return pickle.load(f)
 
 
 def afu_demo_run(agent, env):
@@ -63,11 +59,9 @@ def main() -> None:
     ddpg_agent = DDPG.load_agent(f"weights/trained_{env_name}.pt")
     demo_run(ddpg_agent, env_name)
 
-    env_name = "CartPoleContinuousStudy-v0"
-    afu_agent = load_afu_model(
-        "weights/trained_AFU_CartPoleContinuousStudy-v0.pt"
-    )
-    afu_demo_run(afu_agent, env_name)
+    # env_name = "CartPoleContinuousStudy-v0"
+    # afu_agent = load_afu_params("weights/trained_AFU_CartPoleContinuousStudy-v0.npz", new_algo)
+    # afu_demo_run(afu_agent, env_name)
 
 
 if __name__ == "__main__":

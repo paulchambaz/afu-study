@@ -8,7 +8,6 @@ from afu_rljax.trainer import Trainer  # type: ignore
 import jax
 from datetime import datetime
 import os
-import pickle
 
 
 def test_afu_cartpole():
@@ -17,7 +16,7 @@ def test_afu_cartpole():
     env_test = gym.make(env_id)
 
     algo = AFU(
-        num_agent_steps=100000,
+        num_agent_steps=50000,
         # num_agent_steps=100000,
         state_space=env.observation_space,
         action_space=env.action_space,
@@ -26,8 +25,8 @@ def test_afu_cartpole():
         lr_actor=3e-4,
         lr_critic=3e-4,
         lr_alpha=3e-4,
-        units_actor=(256, 256),
-        units_critic=(256, 256),
+        units_actor=(16, 16),
+        units_critic=(16, 16),
         gradient_reduction=0.8,
         variant="alpha",
         alg="AFU",
@@ -44,7 +43,7 @@ def test_afu_cartpole():
         env_test=env_test,
         algo=algo,
         # num_agent_steps=100000,
-        num_agent_steps=100000,
+        num_agent_steps=50000,
         log_dir=log_dir,
         eval_interval=1000,
         seed=42,
@@ -53,11 +52,21 @@ def test_afu_cartpole():
     print("Starting AFU training...")
     trainer.train()
 
-    save_path = "weights/trained_AFU_CartPoleContinuousStudy-v0.pt"
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    with open(save_path, "wb") as f:
-        pickle.dump(algo, f)
-    print(f"Saved AFU model to {save_path}")
+    # save_path = "weights/trained_AFU_CartPoleContinuousStudy-v0.pt"
+    # os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    #
+    # # Get the parameters from the AFU object
+    # params_dict = {
+    #     'actor_params': algo.actor_state.params,
+    #     'critic_params': algo.critic_state.params,
+    #     'log_alpha': algo.log_alpha,
+    # }
+    #
+    # # Save parameters using numpy's savez
+    # with open(save_path, 'wb') as f:
+    #     jnp.savez(save_path, **params_dict)
+    #
+    # print(f"Saved AFU model parameters to {save_path}")
 
     print("\nRunning demonstrations...")
     for i in range(3):
@@ -151,9 +160,9 @@ def train_demo(algo, env_name) -> None:
 
 
 def main() -> None:
-    # train_demo(DQN, "MountainCar-v0")
+    train_demo(DQN, "MountainCar-v0")
     # train_demo(DDPG, "CartPoleContinuousStudy-v0")
-    test_afu_cartpole()
+    # test_afu_cartpole()
 
 
 if __name__ == "__main__":
