@@ -8,6 +8,7 @@ from afu_rljax.trainer import Trainer  # type: ignore
 import jax
 from datetime import datetime
 import os
+import pickle
 
 
 def test_afu_cartpole():
@@ -32,8 +33,6 @@ def test_afu_cartpole():
         alg="AFU",
     )
 
-    print("this is a test")
-
     # Setup logging
     time = datetime.now().strftime("%Y%m%d-%H%M")
     log_dir = os.path.join("logs", f"cartpole_afu_{time}")
@@ -53,6 +52,12 @@ def test_afu_cartpole():
 
     print("Starting AFU training...")
     trainer.train()
+
+    save_path = "weights/trained_AFU_CartPoleContinuousStudy-v0.pt"
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    with open(save_path, 'wb') as f:
+        pickle.dump(algo, f)
+    print(f"Saved AFU model to {save_path}")
 
     print("\nRunning demonstrations...")
     for i in range(3):
