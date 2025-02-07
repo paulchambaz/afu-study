@@ -55,7 +55,7 @@ def test_afu_cartpole():
 
     save_path = "weights/trained_AFU_CartPoleContinuousStudy-v0.pt"
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    with open(save_path, 'wb') as f:
+    with open(save_path, "wb") as f:
         pickle.dump(algo, f)
     print(f"Saved AFU model to {save_path}")
 
