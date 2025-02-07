@@ -48,6 +48,7 @@ flake-inputs/
 
 # Logs
 *.log
+logs/
 
 # Temporary files
 *.tmp

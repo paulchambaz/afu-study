@@ -6,6 +6,8 @@ from afu.agents.ddpg import DDPG
 from afu_rljax.algorithm import AFU  # type: ignore
 from afu_rljax.trainer import Trainer  # type: ignore
 import jax
+from datetime import datetime
+import os
 
 
 def test_afu_cartpole():
@@ -14,7 +16,7 @@ def test_afu_cartpole():
     env_test = gym.make(env_id)
 
     algo = AFU(
-        num_agent_steps=1000,
+        num_agent_steps=100000,
         # num_agent_steps=100000,
         state_space=env.observation_space,
         action_space=env.action_space,
@@ -30,13 +32,21 @@ def test_afu_cartpole():
         alg="AFU",
     )
 
+    print("this is a test")
+
+    # Setup logging
+    time = datetime.now().strftime("%Y%m%d-%H%M")
+    log_dir = os.path.join("logs", f"cartpole_afu_{time}")
+    os.makedirs(log_dir, exist_ok=True)
+
     # Create trainer and train
     trainer = Trainer(
         env=env,
         env_test=env_test,
         algo=algo,
         # num_agent_steps=100000,
-        num_agent_steps=1000,
+        num_agent_steps=100000,
+        log_dir=log_dir,
         eval_interval=1000,
         seed=42,
     )
@@ -56,10 +66,8 @@ def afu_demo_run(agent, env):
     done = False
     total_reward = 0
 
-    rng = jax.random.PRNGKey(0)
-
     while not done:
-        action = agent.select_action(observation, rng, eval=True)
+        action = agent.select_action(observation)
         observation, reward, terminated, truncated, info = env.step(action)
         done = terminated or truncated
         total_reward += reward
@@ -139,8 +147,8 @@ def train_demo(algo, env_name) -> None:
 
 def main() -> None:
     # train_demo(DQN, "MountainCar-v0")
-    train_demo(DDPG, "CartPoleContinuousStudy-v0")
-    # test_afu_cartpole()
+    # train_demo(DDPG, "CartPoleContinuousStudy-v0")
+    test_afu_cartpole()
 
 
 if __name__ == "__main__":
