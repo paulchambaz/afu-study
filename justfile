@@ -7,7 +7,7 @@ demo:
 test:
     pytest
 
-format:
+fmt:
     black .
 
 lint:

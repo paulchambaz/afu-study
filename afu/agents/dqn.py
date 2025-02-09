@@ -8,7 +8,7 @@ from bbrl_utils.nn import build_mlp  # type: ignore
 from bbrl.workspace import Workspace  # type: ignore
 from gymnasium.spaces import Discrete  # type: ignore
 from .memory import ReplayBuffer
-from tqdm import tqdm
+from tqdm import tqdm  # type: ignore
 
 
 class DiscreteQNetwork(Agent):
@@ -236,7 +236,7 @@ class DQN:
         """Save the complete state of the DQN agent to disk."""
 
         # Save everything needed to restore the agent: network weights,
-        # optimizer state, parameters, and training progress
+        # optimizer state, parameters and training progress
         save_dict = {
             "q_network_state": self.q_network.state_dict(),
             "target_network_state": self.target_network.state_dict(),
