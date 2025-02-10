@@ -12,7 +12,9 @@ from tqdm import tqdm  # type: ignore
 class ContinuousVFunction(Agent):
     """Value function network that estimates state values V(S)."""
 
-    def __init__(self, state_dim: int, hidden_size: list[int], prefix: str) -> None:
+    def __init__(
+        self, state_dim: int, hidden_size: list[int], prefix: str
+    ) -> None:
         """Initialize value function network.
 
         * state_dim: dimension of the state space
