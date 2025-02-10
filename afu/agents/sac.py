@@ -100,9 +100,9 @@ class SAC:
         """Initialize networks, optimizers and other components."""
         self.params = params
 
-        # Create training environment and validate its observation/action spaces. We need
-        # both spaces to have proper shape attributes since we're dealing with continuous
-        # state/ation spaces.
+        # Create training environment and validate its observation/action spaces.
+        # We need both spaces to have proper shape attributes since we're dealing
+        # with continuous state/action spaces.
         self.train_env = gym.make(params["env_name"])
         if (
             not hasattr(self.train_env.observation_space, "shape")
