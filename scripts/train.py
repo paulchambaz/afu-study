@@ -3,6 +3,7 @@ import numpy as np
 from afu.agents.dqn import DQN
 from afu.agents.ddpg import DDPG
 from afu.agents.sac import SAC
+from afu.agents.afu import AFU
 
 # from afu_rljax.algorithm import AFU  # type: ignore
 # from afu_rljax.trainer import Trainer  # type: ignore
@@ -147,6 +148,9 @@ def train_demo(algo, env_name) -> None:
         "policy_lr": 1e-3,  # Learning rate for policy
         "q_lr": 1e-3,  # Learning rate for Q networks
         "alpha_lr": 3e-4,  # Learning rate for temperature parameter
+        "log_std_min": -20.0,  # Minimum log standard deviation for Gaussian policy
+        "log_std_max": 2.0,  # Maximum log standard deviation for Gaussian policy
+        "gradient_reduction": 0.8,  # Gradient reduction coefficient for AFU
     }
 
     agent = algo(params)
@@ -170,7 +174,7 @@ def train_demo(algo, env_name) -> None:
 
 def main() -> None:
     # train_demo(DQN, "MountainCar-v0")
-    train_demo(SAC, "CartPoleContinuousStudy-v0")
+    train_demo(AFU, "CartPoleContinuousStudy-v0")
     # test_afu_cartpole()
 
 
