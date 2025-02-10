@@ -77,9 +77,10 @@ class ContinuousQFunction(Agent):
     """Q-function network that estimates state-action values Q(s,a)."""
 
     def __init__(
-        self, state_dim: int, hidden_size: list[int], action_dim: int
+        self, state_dim: int, hidden_size: list[int], action_dim: int, prefix: str
     ) -> None:
         super().__init__()
+        self.prefix = prefix
 
         self.model = build_mlp(
             [state_dim + action_dim] + hidden_size + [1], activation=nn.ReLU()
@@ -93,7 +94,7 @@ class ContinuousQFunction(Agent):
         state_action = torch.cat([obs, action], dim=1)
         q_value = self.model(state_action).squeeze(-1)
 
-        self.set(("q_value", t), q_value)
+        self.set((f"{self.prefix}q_value", t), q_value)
 
 
 class AFU:
@@ -135,8 +136,11 @@ class AFU:
         self.value = ContinuousVFunction(state_dim, params["hidden_size"])
         self.value_target = ContinuousVFunction(state_dim, params["hidden_size"])
 
-        self.qf = ContinuousQFunction(
-            state_dim, params["hidden_size"], action_dim
+        self.q1 = ContinuousQFunction(
+            state_dim, params["hidden_size"], action_dim, prefix="q1/"
+        )
+        self.q2 = ContinuousQFunction(
+            state_dim, params["hidden_size"], action_dim, prefix="q2/"
         )
 
         self.value_target.load_state_dict(self.value.state_dict())
@@ -149,8 +153,11 @@ class AFU:
         self.value_optimizer = torch.optim.Adam(
             self.value.parameters(), lr=params["learning_rate"]
         )
-        self.qf_optimizer = torch.optim.Adam(
-            self.qf.parameters(), lr=params["learning_rate"]
+        self.q1_optimizer = torch.optim.Adam(
+            self.q1.parameters(), lr=params["learning_rate"]
+        )
+        self.q2_optimizer = torch.optim.Adam(
+            self.q2.parameters(), lr=params["learning_rate"]
         )
 
         self.total_steps = 0
@@ -192,7 +199,7 @@ class AFU:
         rewards: torch.Tensor,
         next_states: torch.Tensor,
         dones: torch.Tensor,
-    ) -> torch.Tensor:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Computes the critic loss using gradient reduction mechanism."""
         workspace = Workspace()
         workspace.set("env/env_obs", 0, next_states)
@@ -209,18 +216,25 @@ class AFU:
         current_values = workspace.get("value", 0)
 
         workspace.set("action", 0, actions)
-        self.qf(workspace, t=0)
-        q_values = workspace.get("q_value", 0)
+        self.q1(workspace, t=0)
+        self.q2(workspace, t=0)
+        q1_values = workspace.get("q1/q_value", 0)
+        q2_values = workspace.get("q2/q_value", 0)
 
-        advantages = q_values - current_values.detach()
+        advantages1 = q1_values - current_values.detach()
+        advantages2 = q2_values - current_values.detach()
 
         grad_red = self.params["gradient_reduction"]
-        reduced_values = (
-            grad_red * current_values.detach() + (1 - grad_red) * current_values
+        mask = (target_q <= current_values).float().detach()
+        reduced_values = mask * current_values + (1 - mask) * (
+            grad_red * current_values + (1 - grad_red) * current_values.detach()
         )
 
-        critic_loss = (advantages**2 + (reduced_values - target_q) ** 2).mean()
-        return critic_loss
+
+        critic_loss1 = (advantages1**2 + (reduced_values - target_q)**2).mean()
+        critic_loss2 = (advantages2**2 + (reduced_values - target_q)**2).mean()
+        
+        return critic_loss1, critic_loss2
 
     def _compute_actor_loss(
         self, states: torch.Tensor
@@ -234,8 +248,12 @@ class AFU:
         actions = workspace.get("action", 0)
 
         workspace.set("action", 0, actions)
-        self.qf(workspace, t=0)
-        q_values = workspace.get("q_value", 0)
+        self.q1(workspace, t=0)
+        self.q2(workspace, t=0)
+        q1_values = workspace.get("q1/q_value", 0)
+        q2_values = workspace.get("q2/q_value", 0)
+
+        q_values = torch.min(q1_values, q2_values)
 
         policy_loss = -q_values.mean()
 
@@ -261,8 +279,12 @@ class AFU:
         actions = workspace.get("action", 0)
 
         workspace.set("action", 0, actions)
-        self.qf(workspace, t=0)
-        q_values = workspace.get("q_value", 0)
+        self.q1(workspace, t=0)
+        self.q2(workspace, t=0)
+        q1_values = workspace.get("q1/q_value", 0)
+        q2_values = workspace.get("q2/q_value", 0)
+
+        q_values = torch.min(q1_values, q2_values)
 
         value_loss = nn.MSELoss()(current_values, q_values.detach())
 
@@ -278,12 +300,16 @@ class AFU:
             continuous=True,
         )
 
-        critic_loss = self._compute_critic_loss(
+        q1_loss, q2_loss = self._compute_critic_loss(
             states, actions, rewards, next_states, dones
         )
-        self.qf_optimizer.zero_grad()
-        critic_loss.backward()
-        self.qf_optimizer.step()
+        self.q1_optimizer.zero_grad()
+        q1_loss.backward()
+        self.q1_optimizer.step()
+
+        self.q2_optimizer.zero_grad()
+        q2_loss.backward()
+        self.q2_optimizer.step()
 
         value_loss = self._compute_value_loss(states, next_states, rewards, dones)
         self.value_optimizer.zero_grad()
@@ -299,9 +325,9 @@ class AFU:
 
         return (
             actor_loss.item(),
-            critic_loss.item(),
+            q1_loss.item(),
+            q2_loss.item(),
             value_loss.item(),
-            0.0 
         )
 
     def train(self) -> dict:
@@ -350,10 +376,12 @@ class AFU:
             "policy_state": self.policy.state_dict(),
             "value_state": self.value.state_dict(),
             "value_target_state": self.value_target.state_dict(),
-            "qf_state": self.qf.state_dict(),
+            "q1_state": self.q1.state_dict(),
+            "q2_state": self.q2.state_dict(),
             "policy_optimizer_state": self.policy_optimizer.state_dict(),
             "value_optimizer_state": self.value_optimizer.state_dict(),
-            "qf_optimizer_state": self.qf_optimizer.state_dict(),
+            "q1_optimizer_state": self.q1_optimizer.state_dict(),
+            "q2_optimizer_state": self.q2_optimizer.state_dict(),
             "params": self.params,
             "total_steps": self.total_steps,
         }
@@ -366,11 +394,13 @@ class AFU:
         self.policy.load_state_dict(save_dict["policy_state"])
         self.value.load_state_dict(save_dict["value_state"])
         self.value_target.load_state_dict(save_dict["value_target_state"])
-        self.qf.load_state_dict(save_dict["qf_state"])
+        self.q1.load_state_dict(save_dict["q1_state"])
+        self.q2.load_state_dict(save_dict["q2_state"])
 
         self.policy_optimizer.load_state_dict(save_dict["policy_optimizer_state"])
         self.value_optimizer.load_state_dict(save_dict["value_optimizer_state"])
-        self.qf_optimizer.load_state_dict(save_dict["qf_optimizer_state"])
+        self.q1_optimizer.load_state_dict(save_dict["q1_optimizer_state"])
+        self.q2_optimizer.load_state_dict(save_dict["q2_optimizer_state"])
 
         self.params = save_dict["params"]
         self.total_steps = save_dict["total_steps"]
