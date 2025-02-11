@@ -129,7 +129,7 @@ class GaussianPolicy(Agent):
         normal = torch.randn_like(mean)
         sample = mean + std * normal
         action = torch.tanh(sample)
-        
+
         self.set(("sample", t), sample)
         self.set(("action", t), action)
 
@@ -143,7 +143,7 @@ class GaussianPolicy(Agent):
         log_std = self.get(("log_std", t))
         sample = self.get(("sample", t))
         action = self.get(("action", t))
-        
+
         std = log_std.exp()
 
         # Gaussian log probability

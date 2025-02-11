@@ -103,7 +103,7 @@ def demo_run(agent, env):
 
     while not done:
         action = agent.select_action(observation, evaluation=True)
-        observation, reward, terminated, truncated, info = env.step(action)
+        observation, reward, terminated, truncated, _ = env.step(action)
         done = terminated or truncated
         total_reward += reward
 
@@ -120,7 +120,7 @@ def train_demo(algo, env_name) -> None:
         "hidden_size": [128, 128],  # Two hidden layers of size 126 each
         "learning_rate": 1e-3,  # Standard learning rate for Adam optimizer
         "batch_size": 128,  # How many transitions to sample for each update
-        "replay_size": 100_000,  # Maximum transitions to store in replay buffer
+        "replay_size": 10_000,  # Maximum transitions to store in replay buffer
         "target_update": 1000,  # Update target network every N steps
         "gamma": 0.99,  # Standard discount factor for RL
         "epsilon_start": 1.0,  # Start with 100% random actions
