@@ -63,9 +63,11 @@ class ContiniousQFunction(Agent):
         action = self.get(("action", t))
 
         state_action = torch.cat([obs, action], dim=1)
-        q_value = self.model(state_action).squeeze(-1)
+        q_values = self.model(state_action).squeeze(-1)
+        advantages = -torch.abs(q_values)
 
-        self.set((f"{self.prefix}q_value", t), q_value)
+        self.set((f"{self.prefix}q_value", t), q_values)
+        self.set((f"{self.prefix}advantages", t), advantages)
 
 
 class GaussianPolicy(Agent):
@@ -95,24 +97,23 @@ class GaussianPolicy(Agent):
         # the Gaussian distribution, allowing for learned state-independent
         # standard deviations.
         self.model = build_mlp(
-            [state_dim] + hidden_size + [action_dim],
+            [state_dim] + hidden_size + [3 * action_dim],
             activation=nn.ReLU(),
         )
-
-        # Learnable log standard deviations
-        self.log_std = nn.Parameter(torch.zeros(action_dim))
         self.log_std_min = log_std_min
         self.log_std_max = log_std_max
 
     def forward(self, t: int) -> None:
         """Compute mean and log_std of the action distribution."""
         obs = self.get(("env/env_obs", t))
-        mean = self.model(obs)
-        log_std = torch.clamp(self.log_std, self.log_std_min, self.log_std_max)
-        log_std = log_std.expand_as(mean)
+        output = self.model(obs)
+        mean, log_std, extra_loc = torch.chunk(output, 3, dim=1)
+        log_std = torch.clamp(log_std, self.log_std_min, self.log_std_max)
+        extra_loc = torch.clamp(extra_loc, -1.0, 1.0)
 
         self.set(("mean", t), mean)
         self.set(("log_std", t), log_std)
+        self.set(("extra_loc", t), extra_loc)
 
     def sample_action(self, workspace: Workspace, t: int) -> None:
         """Sample actions using the reparameterization trick."""
@@ -128,7 +129,7 @@ class GaussianPolicy(Agent):
         normal = torch.randn_like(mean)
         sample = mean + std * normal
         action = torch.tanh(sample)
-
+        
         self.set(("sample", t), sample)
         self.set(("action", t), action)
 
@@ -142,7 +143,7 @@ class GaussianPolicy(Agent):
         log_std = self.get(("log_std", t))
         sample = self.get(("sample", t))
         action = self.get(("action", t))
-
+        
         std = log_std.exp()
 
         # Gaussian log probability
@@ -256,8 +257,6 @@ class AFU:
             [self.log_alpha], lr=params["learning_rate"]
         )
 
-        self.gradient_reduction = params["gradient_reduction"]
-
         self.total_steps = 0
 
     def _soft_update(
@@ -322,7 +321,7 @@ class AFU:
         q1_values = workspace.get("q1/q_value", 0)
         q2_values = workspace.get("q2/q_value", 0)
 
-        optim_advantages = -torch.stack(
+        optim_advantages = torch.stack(
             [
                 q1_values - optim_values,
                 q2_values - optim_values,
@@ -335,8 +334,8 @@ class AFU:
         )
 
         mix_gd_optim_values = (1 - no_mix_case) * (
-            ((1 - self.gradient_reduction) * optim_values).detach()
-            + self.gradient_reduction * optim_values
+            ((1 - self.params["gradient_reduction"]) * optim_values).detach()
+            + self.params["gradient_reduction"] * optim_values
         ) + no_mix_case * optim_values
 
         critic_loss = (
@@ -344,9 +343,6 @@ class AFU:
             + up_case * 2 * optim_advantages * (mix_gd_optim_values - targets)
             + (mix_gd_optim_values - targets).pow(2)
         ).mean()
-
-        abs_td = torch.abs(targets - torch.stack([q1_values, q2_values]))
-        critic_loss += abs_td.pow(2).mean()
 
         return critic_loss
 
@@ -380,22 +376,16 @@ class AFU:
 
         return policy_loss, log_probs
 
-    def _adjust_temperature(self, log_probs: torch.Tensor) -> torch.Tensor:
-        """Compute temperature loss for entropy target maintenance.
-
-        * log_probs: log probabilities of actions from current policy
-
-        -> temperature loss to be optimized
-        """
-        # The temperature (alpha) automatically adjusts to maintain a target
-        # entropy of -action_dim. When policy entropy is too low (high
-        # log_probs), alpha increases to encourage exploration. When entropy is
-        # too high, alpha decreases.
+    def _adjust_temperature(
+        self, log_probs: torch.Tensor, states: torch.Tensor
+    ) -> torch.Tensor:
         target_entropy = -self.action_dim
 
-        alpha_loss = -(
-            self.log_alpha * (log_probs + target_entropy).detach()
-        ).mean()
+        current_entropy = -log_probs
+
+        alpha_error = current_entropy - target_entropy
+        alpha_loss = -(self.log_alpha * alpha_error.detach()).mean()
+
         return alpha_loss
 
     def _compute_targets(
@@ -425,7 +415,13 @@ class AFU:
 
         target_v = torch.min(next_v1, next_v2)
 
-        targets = rewards + (1 - dones) * self.params["gamma"] * target_v
+        targets = (
+            rewards + (1 - dones) * self.params["gamma"] * target_v
+        ).detach()
+
+        noise_scale = 0.1 * torch.abs(targets).mean().detach()
+        noise = noise_scale * torch.randn_like(targets)
+        targets = targets + noise
 
         return targets
 
@@ -476,7 +472,10 @@ class AFU:
         policy_loss.backward()
         self.policy_optimizer.step()
 
-        alpha_loss = self._adjust_temperature(log_probs)
+        # self.alpha_optimizer.zero_grad()
+        alpha_loss = self._adjust_temperature(log_probs, states)
+        # alpha_loss.backward()
+        # self.alpha_optimizer.step()
 
         self._soft_update(self.v1, self.target_v1)
         self._soft_update(self.v2, self.target_v2)

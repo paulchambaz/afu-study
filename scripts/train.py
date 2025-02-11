@@ -27,8 +27,8 @@ from afu.agents.afu import AFU
 #         lr_actor=3e-4,
 #         lr_critic=3e-4,
 #         lr_alpha=3e-4,
-#         units_actor=(16, 16),
-#         units_critic=(16, 16),
+#         units_actor=(128, 128),
+#         units_critic=(128, 128),
 #         gradient_reduction=0.8,
 #         variant="alpha",
 #         alg="AFU",
@@ -120,7 +120,7 @@ def train_demo(algo, env_name) -> None:
         "hidden_size": [128, 128],  # Two hidden layers of size 126 each
         "learning_rate": 1e-3,  # Standard learning rate for Adam optimizer
         "batch_size": 128,  # How many transitions to sample for each update
-        "replay_size": 10_000,  # Maximum transitions to store in replay buffer
+        "replay_size": 100_000,  # Maximum transitions to store in replay buffer
         "target_update": 1000,  # Update target network every N steps
         "gamma": 0.99,  # Standard discount factor for RL
         "epsilon_start": 1.0,  # Start with 100% random actions
@@ -137,16 +137,16 @@ def train_demo(algo, env_name) -> None:
             128,
             128,
         ],  # Two hidden layers of size 128 each for the critic
-        "actor_lr": 1e-3,  # Standard learning rate for Adam optimizer for the actor
-        "critic_lr": 1e-3,  # Standard learning rate for Adam optimizer for the critic
-        "tau": 0.005,  # Soft update parameter
+        "actor_lr": 3e-4,  # Standard learning rate for Adam optimizer for the actor
+        "critic_lr": 3e-4,  # Standard learning rate for Adam optimizer for the critic
+        "tau": 0.01,  # Soft update parameter
         "policy_hidden_size": [
             128,
             128,
         ],  # Two hidden layers for the policy network
         "q_hidden_size": [128, 128],  # Two hidden layers for the Q networks
-        "policy_lr": 1e-3,  # Learning rate for policy
-        "q_lr": 1e-3,  # Learning rate for Q networks
+        "policy_lr": 3e-4,  # Learning rate for policy
+        "q_lr": 3e-4,  # Learning rate for Q networks
         "alpha_lr": 3e-4,  # Learning rate for temperature parameter
         "log_std_min": -20.0,  # Minimum log standard deviation for Gaussian policy
         "log_std_max": 2.0,  # Maximum log standard deviation for Gaussian policy
