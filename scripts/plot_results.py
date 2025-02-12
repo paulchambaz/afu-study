@@ -52,9 +52,14 @@ def display_results(results_dict, colors_dict, title, N=4):
 
 
 def main() -> None:
-    algorithms = ["DDPG", "SAC", "AFU"]
+    algorithms = ["DDPG", "SAC", "AFU", "AFUPerrin"]
     env_name = "CartPoleContinuousStudy-v0"
-    colors_dict = {"DDPG": "blue", "SAC": "red", "AFU": "green"}
+    colors_dict = {
+        "DDPG": "#D00000",
+        "SAC": "#38B000",
+        "AFU": "#0096C7",
+        "AFUPerrin": "#023E8A"
+    }
 
     # On-policy results
     on_policy_results = {}
