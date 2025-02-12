@@ -115,13 +115,14 @@ from tqdm import tqdm  # type: ignore
 #
 #     print(f"Demo completed on {env} with total reward: {total_reward}")
 
+
 def demo_run(agent, env_name, render=True):
     """Run a demonstration episode."""
-    env = gym.make(env_name, render_mode='human' if render else None)
+    env = gym.make(env_name, render_mode="human" if render else None)
     state, _ = env.reset()
     total_reward = 0
     done = False
-    
+
     while not done:
         action = agent.get_action(state, evaluation=True)
         state, reward, terminated, truncated, _ = env.step(action)
@@ -129,10 +130,11 @@ def demo_run(agent, env_name, render=True):
         total_reward += reward
         if render:
             env.render()
-    
+
     env.close()
     print(f"Demo episode reward: {total_reward}")
     return total_reward
+
 
 def train_demo_v2(algo, env_name) -> None:
     params = {
@@ -147,66 +149,67 @@ def train_demo_v2(algo, env_name) -> None:
         "epsilon_end": 0.05,
         "epsilon_decay": 5000,
         "max_episodes": 500,
-        "max_steps": 500
+        "max_steps": 500,
     }
 
     # Initialize agent and workspace
     agent = algo(params)
     workspace = Workspace()
-    
+
     # Training loop
     episode_rewards = []
     progress = tqdm(range(params["max_episodes"]), desc="Training")
-    
+
     for episode in progress:
         state, _ = agent.env.reset()
         episode_reward = 0.0
-        
+
         # Episode loop
         for step in range(params["max_steps"]):
             # Get action using our new agent system
             action = agent.get_action(state)
-            
+
             # Execute action in environment
             next_state, reward, terminated, truncated, _ = agent.env.step(action)
             done = terminated or truncated
-            
+
             # Store transition
             agent.replay_buffer.push(state, action, reward, next_state, done)
-            
+
             # Perform update
             agent.update()
-            
+
             state = next_state
             episode_reward += reward
-            
+
             if done:
                 break
-        
+
         # Track rewards
         episode_rewards.append(episode_reward)
-        
+
         if len(episode_rewards) >= 10:
             avg_reward = np.mean(episode_rewards[-10:])
-            progress.set_postfix({"avg_reward": f"{avg_reward:.2f}"}, refresh=True)
-    
+            progress.set_postfix(
+                {"avg_reward": f"{avg_reward:.2f}"}, refresh=True
+            )
+
     # Save results and demonstrate
     metrics = {"episode_rewards": episode_rewards}
     final_avg_reward = np.mean(metrics["episode_rewards"][-100:])
     print(f"Training completed. Final average reward: {final_avg_reward:.2f}")
-    
+
     save_path = f"weights/trained_{env_name}.pt"
     agent.save(save_path)
-    
+
     print("\nRunning demonstrations...")
     for i in range(1):
         print(f"\nDemo {i+1}:")
         demo_run(agent, env_name)
-    
+
     loaded_agent = algo.load_agent(save_path)
     for _ in range(1):
         demo_run(loaded_agent, env_name)
-
 
 
 def train_demo(algo, env_name) -> None:

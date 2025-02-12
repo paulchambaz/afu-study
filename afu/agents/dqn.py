@@ -292,6 +292,7 @@ class QValueAgent(Agent):
 
 class EpsilonGreedyAgent(Agent):
     """Agent that selects actions using an epsilon-greedy policy."""
+
     def __init__(self, action_space, epsilon_start, epsilon_end, epsilon_decay):
         super().__init__()
         self.action_space = action_space
@@ -304,18 +305,18 @@ class EpsilonGreedyAgent(Agent):
         epsilon = self.epsilon_end + (
             self.epsilon_start - self.epsilon_end
         ) * np.exp(-self.total_steps / self.epsilon_decay)
-        
+
         q_values = self.get(("q_values", t))
         batch_size = q_values.shape[0]
-        
+
         # Epsilon-greedy selection
         if random.random() > epsilon:
             action = q_values.argmax(dim=1)
         else:
             action = torch.tensor(
-                [self.action_space.sample() for _ in range(batch_size)], 
-                dtype=torch.long
+                [self.action_space.sample() for _ in range(batch_size)],
+                dtype=torch.long,
             )
-        
+
         self.set(("action", t), action)
         self.total_steps += 1
