@@ -1,11 +1,11 @@
 run *ARGS:
-    python -m scripts.train
+    python -m scripts.train {{ARGS}}
 
 evaluate *ARGS:
-    python -m scripts.evaluate
+    python -m scripts.evaluate {{ARGS}}
 
 plot *ARGS:
-    python -m scripts.plot_results
+    python -m scripts.plot_results {{ARGS}}
 
 demo:
   python -m scripts.demo

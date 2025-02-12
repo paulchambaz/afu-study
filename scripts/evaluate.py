@@ -6,6 +6,7 @@ import pickle
 from afu.agents.ddpg import DDPG
 from afu.agents.sac import SAC
 from afu.agents.afu import AFU
+import argparse
 
 
 def evaluation(agent, env_name, n=15):
@@ -64,22 +65,28 @@ def off_policy_training_evaluate(algo, env_name, total_steps, interval, n=15):
         agent = algo(params)
         env = gym.make(env_name)
 
-        env_low = np.array(
-            [
-                -4.8,
-                -8.0,
-                -0.418,
-                -8.0,
-            ]
-        ) / 2.0
-        env_high = np.array(
-            [
-                4.8,
-                8.0,
-                0.418,
-                8.0,
-            ]
-        ) / 2.0
+        env_low = (
+            np.array(
+                [
+                    -4.8,
+                    -8.0,
+                    -0.418,
+                    -8.0,
+                ]
+            )
+            / 2.0
+        )
+        env_high = (
+            np.array(
+                [
+                    4.8,
+                    8.0,
+                    0.418,
+                    8.0,
+                ]
+            )
+            / 2.0
+        )
 
         rewards = []
         progress = tqdm(range(total_steps), desc=f"Training {i}/{n}")
@@ -129,7 +136,7 @@ def off_policy_training_evaluate(algo, env_name, total_steps, interval, n=15):
         pickle.dump(training_rewards, f)
 
 
-def training_evaluate(algo, env_name, interval, n=15):
+def on_policy_training_evaluate(algo, env_name, interval, n=15):
     params = {
         "env_name": env_name,
         "actor_hidden_size": [128, 128],
@@ -213,16 +220,33 @@ def training_evaluate(algo, env_name, interval, n=15):
         pickle.dump(training_rewards, f)
 
 
+def get_algorithm(name: str):
+    algorithms = {"ddpg": DDPG, "sac": SAC, "afu": AFU}
+    return algorithms[name.lower()]
+
+
 def main() -> None:
-    algorithms = [DDPG, SAC, AFU]
-    # training_evaluate(AFU, "CartPoleContinuousStudy-v0", interval=100, n=15)
-    off_policy_training_evaluate(
-        AFU,
-        "CartPoleContinuousStudy-v0",
-        total_steps=50_000,
-        interval=100,
-        n=15,
-    )
+    parser = argparse.ArgumentParser(description='Train RL algorithms')
+    parser.add_argument('--algo', type=str, choices=['ddpg', 'sac', 'afu'],
+                       required=True, help='Algorithm to train (DDPG, SAC, or AFU)')
+    parser.add_argument('--policy', type=str, choices=['on', 'off'],
+                       required=True, help='Policy type (on/off)')
+    
+    args = parser.parse_args()
+    algo = get_algorithm(args.algo)
+    
+    if args.policy == 'on':
+        on_policy_training_evaluate(
+            algo, "CartPoleContinuousStudy-v0", interval=100, n=15
+        )
+    else:
+        off_policy_training_evaluate(
+            algo,
+            "CartPoleContinuousStudy-v0",
+            total_steps=50_000,
+            interval=100,
+            n=15,
+        )
 
 
 if __name__ == "__main__":
