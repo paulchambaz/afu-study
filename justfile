@@ -7,6 +7,9 @@ evaluate *ARGS:
 plot *ARGS:
     python -m scripts.plot_results {{ARGS}}
 
+benchmark:
+  hivemind
+
 demo:
   python -m scripts.demo
 
