@@ -217,7 +217,7 @@ def on_policy_training_evaluate(
     Path("results").mkdir(exist_ok=True)
 
     algo_name = algo.__name__
-    filename = f"results/{algo_name}-{env_name}.pk"
+    filename = f"results/on-policy-{algo_name}-{env_name}.pk"
     with open(filename, "wb") as f:
         pickle.dump(training_rewards, f)
 
@@ -274,9 +274,9 @@ def main() -> None:
         off_policy_training_evaluate(
             algo,
             env_name,
-            total_steps=500,
+            total_steps=50_000,
             interval=100,
-            n=1,
+            n=15,
         )
 
 
