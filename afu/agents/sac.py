@@ -19,17 +19,15 @@ class GaussianPolicy(Agent):
         super().__init__()
 
         self.model = build_mlp(
-            [state_dim] + hidden_size + [action_dim],
+            [state_dim] + hidden_size + [2 * action_dim],
             activation=nn.ReLU(),
         )
-
-        self.log_std = nn.Parameter(torch.zeros(action_dim))
 
     def forward(self, t: int) -> None:
         """Compute mean and log_std of action distribution for a given state."""
         obs = self.get(("env/env_obs", t))
-        mean = self.model(obs)
-        log_std = self.log_std.expand_as(mean)
+        output = self.model(obs)
+        mean, log_std = torch.chunk(output, 2, dim=1)
 
         self.set(("mean", t), mean)
         self.set(("log_std", t), log_std)
@@ -42,6 +40,9 @@ class GaussianPolicy(Agent):
         log_std = self.get(("log_std", t))
         std = log_std.exp()
 
+        # Implements the reparameterization trick for gradient propagation
+        # through the sampling process, followed by tanh transformation
+        # to bound actions.
         normal = torch.randn_like(mean)
         action = mean + std * normal
         tanh_action = torch.tanh(action)
@@ -180,7 +181,7 @@ class SAC:
     ) -> np.ndarray:
         """Sample action from policy, optionally without exploring for evaluation."""
         workspace = Workspace()
-        state_tensor = torch.FloatTensor(state)
+        state_tensor = torch.FloatTensor(state[None, ...])
         workspace.set("env/env_obs", 0, state_tensor)
 
         self.policy(workspace, t=0)
@@ -279,14 +280,10 @@ class SAC:
         """Update temperature parameter to maintain target entropy."""
         target_entropy = -self.action_dim
 
-        alpha = self.log_alpha.exp()
-        alpha_loss = -(
-            self.log_alpha * (log_probs + target_entropy).detach()
-        ).mean()
+        current_entropy = -log_probs
 
-        self.alpha_optimizer.zero_grad()
-        alpha_loss.backward()
-        self.alpha_optimizer.step()
+        alpha_error = current_entropy - target_entropy
+        alpha_loss = -(self.log_alpha * alpha_error.detach()).mean()
 
         return alpha_loss
 

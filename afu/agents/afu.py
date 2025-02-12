@@ -137,8 +137,6 @@ class GaussianPolicy(Agent):
         """Compute log probability of an action under the Gaussian distribution."""
         self.workspace = workspace
 
-        # Accounts for the tanh transformation when computing log probabilities
-        # using the change of variables formula.
         mean = self.get(("mean", t))
         log_std = self.get(("log_std", t))
         sample = self.get(("sample", t))
@@ -146,7 +144,8 @@ class GaussianPolicy(Agent):
 
         std = log_std.exp()
 
-        # Gaussian log probability
+        # Accounts for the tanh transformation when computing log probabilities
+        # using the change of variables formula.
         normal_log_prob = (-0.5 * ((sample - mean) / std).pow(2) - log_std).sum(
             dim=-1
         )
@@ -274,13 +273,6 @@ class AFU:
     def select_action(
         self, state: np.ndarray, evaluation: bool = False
     ) -> np.ndarray:
-        """Select action for given state.
-
-        * state: current state
-        * evaluation: if True, use deterministic policy
-
-        -> selected action
-        """
         workspace = Workspace()
         state_tensor = torch.FloatTensor(state[None, ...])
         workspace.set("env/env_obs", 0, state_tensor)
