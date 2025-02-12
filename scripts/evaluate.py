@@ -6,6 +6,7 @@ import pickle
 from afu.agents.ddpg import DDPG
 from afu.agents.sac import SAC
 from afu.agents.afu import AFU
+from afu.agents.afu_perrin import AFUPerrin
 import argparse
 
 
@@ -223,7 +224,7 @@ def on_policy_training_evaluate(
 
 
 def get_algorithm(name: str):
-    algorithms = {"ddpg": DDPG, "sac": SAC, "afu": AFU}
+    algorithms = {"ddpg": DDPG, "sac": SAC, "afu": AFU, "afuperrin": AFUPerrin}
     return algorithms[name.lower()]
 
 
@@ -239,7 +240,7 @@ def main() -> None:
     parser.add_argument(
         "--algo",
         type=str,
-        choices=["ddpg", "sac", "afu"],
+        choices=["ddpg", "sac", "afu", "afuperrin"],
         required=True,
         help="Algorithm to train (DDPG, SAC, or AFU)",
     )
