@@ -32,7 +32,7 @@ def evaluation(agent, env_name, n=15):
     return results
 
 
-def off_policy_training_evaluate(algo, env_name, total_steps, interval, n=15):
+def off_policy_training_evaluate(algo, env_name, total_steps, interval=100, n=15):
     params = {
         "env_name": env_name,
         "actor_hidden_size": [128, 128],
@@ -136,7 +136,9 @@ def off_policy_training_evaluate(algo, env_name, total_steps, interval, n=15):
         pickle.dump(training_rewards, f)
 
 
-def on_policy_training_evaluate(algo, env_name, interval, n=15):
+def on_policy_training_evaluate(
+    algo, env_name, total_episodes, interval=100, n=15
+):
     params = {
         "env_name": env_name,
         "actor_hidden_size": [128, 128],
@@ -225,27 +227,56 @@ def get_algorithm(name: str):
     return algorithms[name.lower()]
 
 
+def get_env(name: str):
+    envs = {
+        "cartpole": "CartPoleContinuousStudy-v0",
+    }
+    return envs[name.lower()]
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description='Train RL algorithms')
-    parser.add_argument('--algo', type=str, choices=['ddpg', 'sac', 'afu'],
-                       required=True, help='Algorithm to train (DDPG, SAC, or AFU)')
-    parser.add_argument('--policy', type=str, choices=['on', 'off'],
-                       required=True, help='Policy type (on/off)')
-    
+    parser = argparse.ArgumentParser(description="Train RL algorithms")
+    parser.add_argument(
+        "--algo",
+        type=str,
+        choices=["ddpg", "sac", "afu"],
+        required=True,
+        help="Algorithm to train (DDPG, SAC, or AFU)",
+    )
+    parser.add_argument(
+        "--policy",
+        type=str,
+        choices=["on", "off"],
+        required=True,
+        help="Policy type (on/off)",
+    )
+    parser.add_argument(
+        "--env",
+        type=str,
+        choices=["cartpole"],
+        required=True,
+        help="Environment (cartpole)",
+    )
+
     args = parser.parse_args()
     algo = get_algorithm(args.algo)
-    
-    if args.policy == 'on':
+    env_name = get_env(args.env)
+
+    if args.policy == "on":
         on_policy_training_evaluate(
-            algo, "CartPoleContinuousStudy-v0", interval=100, n=15
+            algo,
+            env_name,
+            total_episodes=500,
+            interval=100,
+            n=15,
         )
     else:
         off_policy_training_evaluate(
             algo,
-            "CartPoleContinuousStudy-v0",
-            total_steps=50_000,
+            env_name,
+            total_steps=500,
             interval=100,
-            n=15,
+            n=1,
         )
 
 

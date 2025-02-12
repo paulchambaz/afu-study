@@ -1,6 +1,6 @@
-ddpg-off: just evaluate --policy off --algo ddpg
-ddpg-on: just evaluate --policy on --algo ddpg
-sac-off: just evaluate --policy off --algo sac 
-sac-on: just evaluate --policy on --algo sac
-afu-off: just evaluate --policy off --algo afu
-afu-on: just evaluate --policy on --algo afu
+ddpg-off: just evaluate --policy off --algo ddpg --env cartpole
+ddpg-on: just evaluate --policy on --algo ddpg --env cartpole
+sac-off: just evaluate --policy off --algo sac  --env cartpole
+sac-on: just evaluate --policy on --algo sac --env cartpole
+afu-off: just evaluate --policy off --algo afu --env cartpole
+afu-on: just evaluate --policy on --algo afu --env cartpole
