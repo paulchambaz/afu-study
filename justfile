@@ -4,6 +4,9 @@ run *ARGS:
 evaluate *ARGS:
     python -m scripts.evaluate
 
+plot *ARGS:
+    python -m scripts.plot_results
+
 demo:
   python -m scripts.demo
 

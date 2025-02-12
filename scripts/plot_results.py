@@ -1,6 +1,6 @@
 import pickle
 import numpy as np
-import matplotlib as plt
+import matplotlib.pyplot as plt
 
 
 def compute_stats(data):
@@ -8,6 +8,7 @@ def compute_stats(data):
     mask = (data >= q1) & (data <= q3)
     iqm = np.mean(data[mask])
     return q1, q3, iqm
+
 
 def display_results(results):
     interval = 100
@@ -24,25 +25,30 @@ def display_results(results):
         q3_values.append(q3)
         iqm_values.append(iqm)
 
-    iqm_values = np.array[iqm_values]
-    q1_values = np.array[q1_values]
-    q3_values = np.array[q3_values]
+    N = 4
+    plot_indices = slice(0, len(timesteps), N)
 
     plt.figure(figsize=(10, 6))
-    plt.plot(timesteps, iqm_values, 'b-', label='IQM')
-    plt.fill_between(timesteps, q1_values, q3_values, alpha=0.2, color='b')
-    
-    plt.xlabel('Training Steps')
-    plt.ylabel('Return')
-    plt.title('Training Progress')
+    plt.plot(timesteps[plot_indices], iqm_values[plot_indices], "b-", label="IQM")
+    plt.fill_between(
+        timesteps[plot_indices],
+        q1_values[plot_indices],
+        q3_values[plot_indices],
+        alpha=0.2,
+        color="b",
+    )
+
+    plt.xlabel("Training Steps")
+    plt.ylabel("Return")
+    plt.title("Training Progress")
     plt.legend()
     plt.grid(True, alpha=0.3)
-
     plt.show()
+
 
 def main() -> None:
     # algorithms = ['DDPG', 'SAC', 'AFU']
-    algo = 'DDPG'
+    algo = "DDPG"
     env_name = "CartPoleContinuousStudy-v0"
 
     filename = f"results/{algo}-{env_name}.pk"
@@ -50,6 +56,7 @@ def main() -> None:
         ddpg_results = pickle.load(f)
 
     display_results(ddpg_results)
+
 
 if __name__ == "__main__":
     main()
