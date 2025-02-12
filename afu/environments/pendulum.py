@@ -3,13 +3,8 @@ from gymnasium.envs.registration import register
 
 
 class PendulumEnvStudy(PendulumEnv):
-    def set_state(
-        self, theta, theta_dot
-    ):
-        self.state = (
-            theta,
-            theta_dot
-        )
+    def set_state(self, theta, theta_dot):
+        self.state = (theta, theta_dot)
 
 
 register(
