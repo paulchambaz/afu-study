@@ -174,7 +174,7 @@ def train_demo(algo, env_name) -> None:
 
 def main() -> None:
     # train_demo(DQN, "MountainCar-v0")
-    train_demo(AFU, "CartPoleContinuousStudy-v0")
+    train_demo(SAC, "CartPoleContinuousStudy-v0")
     # test_afu_cartpole()
 
 
