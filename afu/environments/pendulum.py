@@ -15,5 +15,5 @@ class PendulumEnvStudy(PendulumEnv):
 register(
     id="PendulumStudy-v0",
     entry_point="afu.environments.pendulum:PendulumEnvStudy",
-    max_episode_steps=500,
+    max_episode_steps=200,
 )
