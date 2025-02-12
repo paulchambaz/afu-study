@@ -113,6 +113,7 @@ class DDPG:
         if (
             not hasattr(self.train_env.observation_space, "shape")
             or self.train_env.observation_space.shape is None
+            or self.train_env.action_space.shape == ()
         ):
             raise ValueError(
                 "Environment's observation space must have a shape attribute"
