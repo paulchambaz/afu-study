@@ -10,7 +10,7 @@ from afu.agents.afu_perrin import AFUPerrin
 import argparse
 
 
-def evaluation(agent, env_name, n=5):
+def evaluation(agent, env_name, n=15):
     env = gym.make(env_name)
 
     results = []
@@ -267,17 +267,17 @@ def main() -> None:
         on_policy_training_evaluate(
             algo,
             env_name,
-            total_episodes=200,
+            total_episodes=500,
             interval=100,
-            n=2,
+            n=15,
         )
     else:
         off_policy_training_evaluate(
             algo,
             env_name,
-            total_steps=5000,
+            total_steps=50_000,
             interval=100,
-            n=2,
+            n=15,
         )
 
 
