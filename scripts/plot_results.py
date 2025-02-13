@@ -58,7 +58,7 @@ def main() -> None:
         "DDPG": "#D00000",
         "SAC": "#38B000",
         "AFU": "#0096C7",
-        "AFUPerrin": "#023E8A"
+        "AFUPerrin": "#023E8A",
     }
 
     # On-policy results
