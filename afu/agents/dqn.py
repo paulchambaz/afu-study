@@ -15,7 +15,9 @@ from tqdm import tqdm  # type: ignore
 class DiscreteQNetwork(Agent):
     """A neural network that maps states to Q-values for discrete actions."""
 
-    def __init__(self, state_dim: int, hidden_size: list[int], action_dim: int) -> None:
+    def __init__(
+        self, state_dim: int, hidden_size: list[int], action_dim: int
+    ) -> None:
         """Initialize Q-network with given dimensions."""
         super().__init__()
 
@@ -94,7 +96,9 @@ class DQN:
 
         self.total_steps = 0
 
-    def select_action(self, state: np.ndarray, evaluation: bool = False) -> np.ndarray:
+    def select_action(
+        self, state: np.ndarray, evaluation: bool = False
+    ) -> np.ndarray:
         """Choose action using epsilon-greedy strategy to balance exploration and exploitation."""
 
         # During evaluation, we don't explore (epsilon = 0). During training, epsilon
@@ -162,7 +166,9 @@ class DQN:
         # detach() prevents us from trying to optimize the target network
         targets = (
             rewards
-            + (1 - dones) * self.params["gamma"] * next_q_values.max(1)[0].detach()
+            + (1 - dones)
+            * self.params["gamma"]
+            * next_q_values.max(1)[0].detach()
         )
 
         # Compare our predictions (q_values) to what actually happened (targets)
@@ -221,7 +227,9 @@ class DQN:
 
             if len(episode_rewards) >= 10:
                 avg_reward = np.mean(episode_rewards[-10:])
-                progress.set_postfix({"avg_reward": f"{avg_reward:.2f}"}, refresh=True)
+                progress.set_postfix(
+                    {"avg_reward": f"{avg_reward:.2f}"}, refresh=True
+                )
 
         return {"episode_rewards": episode_rewards}
 
@@ -294,9 +302,9 @@ class EpsilonGreedyAgent(Agent):
         self.total_steps = 0
 
     def forward(self, t: int) -> None:
-        epsilon = self.epsilon_end + (self.epsilon_start - self.epsilon_end) * np.exp(
-            -self.total_steps / self.epsilon_decay
-        )
+        epsilon = self.epsilon_end + (
+            self.epsilon_start - self.epsilon_end
+        ) * np.exp(-self.total_steps / self.epsilon_decay)
 
         q_values = self.get(("q_values", t))
         batch_size = q_values.shape[0]

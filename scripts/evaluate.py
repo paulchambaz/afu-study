@@ -98,10 +98,14 @@ def off_policy_training_evaluate(algo, env_name, total_steps, interval=100, n=15
             agent.train_env.unwrapped.set_state(*random_state)
 
             action = np.random.uniform(low=-1.0, high=1.0, size=(1,))
-            next_state, reward, terminated, truncated, _ = agent.train_env.step(action)
+            next_state, reward, terminated, truncated, _ = agent.train_env.step(
+                action
+            )
             done = terminated or truncated
 
-            agent.replay_buffer.push(random_state, action, reward, next_state, done)
+            agent.replay_buffer.push(
+                random_state, action, reward, next_state, done
+            )
             agent.update()
 
             reward += float(reward)
@@ -112,7 +116,9 @@ def off_policy_training_evaluate(algo, env_name, total_steps, interval=100, n=15
 
             if len(rewards) >= 10:
                 avg_reward = np.mean(rewards[-10:])
-                progress.set_postfix({"avg_reward": f"{avg_reward:.2f}"}, refresh=True)
+                progress.set_postfix(
+                    {"avg_reward": f"{avg_reward:.2f}"}, refresh=True
+                )
 
             if training_steps % interval == 0:
                 results = evaluation(agent, env_name)
@@ -131,7 +137,9 @@ def off_policy_training_evaluate(algo, env_name, total_steps, interval=100, n=15
         pickle.dump(training_rewards, f)
 
 
-def on_policy_training_evaluate(algo, env_name, total_episodes, interval=100, n=15):
+def on_policy_training_evaluate(
+    algo, env_name, total_episodes, interval=100, n=15
+):
     params = {
         "env_name": env_name,
         "actor_hidden_size": [128, 128],
@@ -203,7 +211,9 @@ def on_policy_training_evaluate(algo, env_name, total_episodes, interval=100, n=
 
             if len(episode_rewards) >= 10:
                 avg_reward = np.mean(episode_rewards[-10:])
-                progress.set_postfix({"avg_reward": f"{avg_reward:.2f}"}, refresh=True)
+                progress.set_postfix(
+                    {"avg_reward": f"{avg_reward:.2f}"}, refresh=True
+                )
 
     Path("results").mkdir(exist_ok=True)
 
