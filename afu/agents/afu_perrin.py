@@ -30,9 +30,7 @@ class AFUPerrin:
         self.total_steps = 0
         self.episode_reward = 0.0
 
-    def select_action(
-        self, state: np.ndarray, evaluation: bool = False
-    ) -> np.ndarray:
+    def select_action(self, state: np.ndarray, evaluation: bool = False) -> np.ndarray:
         if evaluation:
             return self.algo.select_action(state)
         else:
