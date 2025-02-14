@@ -12,9 +12,7 @@ from tqdm import tqdm  # type: ignore
 class Actor(Agent):
     """A neural network that maps states to continuous actions in a deterministic policy"""
 
-    def __init__(
-        self, state_dim: int, hidden_size: list[int], action_dim: int
-    ) -> None:
+    def __init__(self, state_dim: int, hidden_size: list[int], action_dim: int) -> None:
         """Initialize actor network with given dimensions."""
         # The actor serves as the policy network in DDPG, directly outputting the best
         # predicted action for any given state. It uses a tanh activation on the output
@@ -124,18 +122,14 @@ class DDPG:
             not hasattr(self.train_env.action_space, "shape")
             or self.train_env.action_space.shape is None
         ):
-            raise ValueError(
-                "Environment's action space must have a shape attribute"
-            )
+            raise ValueError("Environment's action space must have a shape attribute")
         action_dim = self.train_env.action_space.shape[0]
 
         # Inititialize the core networks, actor (policy) network and its target for
         # stable learning and critic (value network and its target for stable learning.
         # Target networks start as copies of their original networks.
         self.actor = Actor(state_dim, params["actor_hidden_size"], action_dim)
-        self.target_actor = Actor(
-            state_dim, params["actor_hidden_size"], action_dim
-        )
+        self.target_actor = Actor(state_dim, params["actor_hidden_size"], action_dim)
         self.target_actor.load_state_dict(self.actor.state_dict())
 
         self.critic = Critic(
@@ -179,9 +173,7 @@ class DDPG:
                 + self.params["tau"] * source_param.data
             )
 
-    def select_action(
-        self, state: np.ndarray, evaluation: bool = False
-    ) -> np.ndarray:
+    def select_action(self, state: np.ndarray, evaluation: bool = False) -> np.ndarray:
         """Choose action for given state, optionally adding exploration noise."""
         # Convert state for tensor and use workspace foor BBRL compability. Get action
         # from actor network, add exploration noise during training and clip actions to
@@ -225,9 +217,7 @@ class DDPG:
         # Calculate target Q-values using Bellman equation. For terminal states (done=1),
         # ony use immediate reward. Otherwise include discounted future value from
         # target networks.
-        target_q = (
-            rewards + (1 - dones) * self.params["gamma"] * next_q_values.detach()
-        )
+        target_q = rewards + (1 - dones) * self.params["gamma"] * next_q_values.detach()
 
         # Now compute current Q-values from our critic network. These represent our
         # current estimates that we want to improve.
@@ -336,9 +326,7 @@ class DDPG:
 
             if len(episode_rewards) >= 10:
                 avg_reward = np.mean(episode_rewards[-10:])
-                progress.set_postfix(
-                    {"avg_reward": f"{avg_reward:.2f}"}, refresh=True
-                )
+                progress.set_postfix({"avg_reward": f"{avg_reward:.2f}"}, refresh=True)
 
         return {"episode_rewards": episode_rewards}
 

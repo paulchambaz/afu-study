@@ -12,9 +12,7 @@ from tqdm import tqdm  # type: ignore
 class ContinuousVFunction(Agent):
     """Value function network that estimates state values V(S)."""
 
-    def __init__(
-        self, state_dim: int, hidden_size: list[int], prefix: str
-    ) -> None:
+    def __init__(self, state_dim: int, hidden_size: list[int], prefix: str) -> None:
         """Initialize value function network.
 
         * state_dim: dimension of the state space
@@ -23,9 +21,7 @@ class ContinuousVFunction(Agent):
         super().__init__()
         self.prefix = prefix
 
-        self.model = build_mlp(
-            [state_dim] + hidden_size + [1], activation=nn.ReLU()
-        )
+        self.model = build_mlp([state_dim] + hidden_size + [1], activation=nn.ReLU())
 
     def forward(self, t: int) -> None:
         """Compute value function estimates for the state.
@@ -146,14 +142,10 @@ class GaussianPolicy(Agent):
 
         # Accounts for the tanh transformation when computing log probabilities
         # using the change of variables formula.
-        normal_log_prob = (-0.5 * ((sample - mean) / std).pow(2) - log_std).sum(
-            dim=-1
-        )
+        normal_log_prob = (-0.5 * ((sample - mean) / std).pow(2) - log_std).sum(dim=-1)
 
         # Apply change of variables formula for tanh transformation
-        log_prob = normal_log_prob - torch.log(1 - action.pow(2) + 1e-6).sum(
-            dim=-1
-        )
+        log_prob = normal_log_prob - torch.log(1 - action.pow(2) + 1e-6).sum(dim=-1)
 
         self.set(("log_prob", t), log_prob)
 
@@ -195,18 +187,12 @@ class AFU:
             not hasattr(self.train_env.action_space, "shape")
             or self.train_env.action_space.shape is None
         ):
-            raise ValueError(
-                "Environment's action space must have a shape attribute"
-            )
+            raise ValueError("Environment's action space must have a shape attribute")
         action_dim = self.train_env.action_space.shape[0]
         self.action_dim = action_dim
 
-        self.v1 = ContinuousVFunction(
-            state_dim, params["hidden_size"], prefix="v1/"
-        )
-        self.v2 = ContinuousVFunction(
-            state_dim, params["hidden_size"], prefix="v2/"
-        )
+        self.v1 = ContinuousVFunction(state_dim, params["hidden_size"], prefix="v1/")
+        self.v2 = ContinuousVFunction(state_dim, params["hidden_size"], prefix="v2/")
 
         self.target_v1 = ContinuousVFunction(
             state_dim, params["hidden_size"], prefix="target_v1/"
@@ -270,9 +256,7 @@ class AFU:
                 + self.params["tau"] * source_param.data
             )
 
-    def select_action(
-        self, state: np.ndarray, evaluation: bool = False
-    ) -> np.ndarray:
+    def select_action(self, state: np.ndarray, evaluation: bool = False) -> np.ndarray:
         workspace = Workspace()
         state_tensor = torch.FloatTensor(state[None, ...])
         workspace.set("env/env_obs", 0, state_tensor)
@@ -321,9 +305,7 @@ class AFU:
         )
 
         up_case = (targets <= optim_values).float().detach()
-        no_mix_case = (
-            (targets <= optim_values + optim_advantages).float().detach()
-        )
+        no_mix_case = (targets <= optim_values + optim_advantages).float().detach()
 
         mix_gd_optim_values = (1 - no_mix_case) * (
             ((1 - self.params["gradient_reduction"]) * optim_values).detach()
@@ -407,9 +389,7 @@ class AFU:
 
         target_v = torch.min(next_v1, next_v2)
 
-        targets = (
-            rewards + (1 - dones) * self.params["gamma"] * target_v
-        ).detach()
+        targets = (rewards + (1 - dones) * self.params["gamma"] * target_v).detach()
 
         noise_scale = 0.1 * torch.abs(targets).mean().detach()
         noise = noise_scale * torch.randn_like(targets)
@@ -515,9 +495,7 @@ class AFU:
 
             if len(episode_rewards) >= 10:
                 avg_reward = np.mean(episode_rewards[-10:])
-                progress.set_postfix(
-                    {"avg_reward": f"{avg_reward:.2f}"}, refresh=True
-                )
+                progress.set_postfix({"avg_reward": f"{avg_reward:.2f}"}, refresh=True)
 
         return {"episode_rewards": episode_rewards}
 
