@@ -190,9 +190,7 @@ def train_demo_v2(algo, env_name) -> None:
 
         if len(episode_rewards) >= 10:
             avg_reward = np.mean(episode_rewards[-10:])
-            progress.set_postfix(
-                {"avg_reward": f"{avg_reward:.2f}"}, refresh=True
-            )
+            progress.set_postfix({"avg_reward": f"{avg_reward:.2f}"}, refresh=True)
 
     # Save results and demonstrate
     metrics = {"episode_rewards": episode_rewards}
@@ -204,7 +202,7 @@ def train_demo_v2(algo, env_name) -> None:
 
     print("\nRunning demonstrations...")
     for i in range(1):
-        print(f"\nDemo {i+1}:")
+        print(f"\nDemo {i + 1}:")
         demo_run(agent, env_name)
 
     loaded_agent = algo.load_agent(save_path)
@@ -262,7 +260,7 @@ def train_demo(algo, env_name) -> None:
 
     print("\nRunning demonstrations...")
     for i in range(1):
-        print(f"\nDemo {i+1}:")
+        print(f"\nDemo {i + 1}:")
         demo_run(agent, env_name)
 
     loaded_agent = algo.load_agent(save_path)
