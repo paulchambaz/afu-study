@@ -66,7 +66,9 @@ def main() -> None:
     for algo in algorithms:
         with open(f"results/on-policy-{algo}-{env_name}.pk", "rb") as f:
             on_policy_results[algo] = pickle.load(f)
-    display_results(on_policy_results, colors_dict, "On-Policy Training Progress", N=4)
+    display_results(
+        on_policy_results, colors_dict, "On-Policy Training Progress", N=4
+    )
 
     # Off-policy results
     off_policy_results = {}

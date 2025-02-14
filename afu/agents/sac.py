@@ -12,7 +12,9 @@ from tqdm import tqdm  # type: ignore
 class GaussianPolicy(Agent):
     """A neural network that outputs a Gaussian distribution over actions."""
 
-    def __init__(self, state_dim: int, hidden_size: list[int], action_dim: int) -> None:
+    def __init__(
+        self, state_dim: int, hidden_size: list[int], action_dim: int
+    ) -> None:
         """Initialize gaussian policy network with given dimensions."""
         super().__init__()
 
@@ -58,8 +60,12 @@ class GaussianPolicy(Agent):
         action = self.get(("action", t))
 
         std = log_std.exp()
-        normal_log_prob = (-0.5 * ((sample - mean) / std).pow(2) - log_std).sum(dim=-1)
-        log_prob = normal_log_prob - torch.log(1 - action.pow(2) + 1e-6).sum(dim=-1)
+        normal_log_prob = (-0.5 * ((sample - mean) / std).pow(2) - log_std).sum(
+            dim=-1
+        )
+        log_prob = normal_log_prob - torch.log(1 - action.pow(2) + 1e-6).sum(
+            dim=-1
+        )
 
         self.set(("log_prob", t), log_prob)
 
@@ -112,7 +118,9 @@ class SAC:
             not hasattr(self.train_env.action_space, "shape")
             or self.train_env.action_space.shape is None
         ):
-            raise ValueError("Environment's action space must have a shape attribute")
+            raise ValueError(
+                "Environment's action space must have a shape attribute"
+            )
         action_dim = self.train_env.action_space.shape[0]
         self.action_dim = action_dim
 
@@ -144,9 +152,15 @@ class SAC:
         self.policy_optimizer = torch.optim.Adam(
             self.policy.parameters(), lr=params["policy_lr"]
         )
-        self.q1_optimizer = torch.optim.Adam(self.q1.parameters(), lr=params["q_lr"])
-        self.q2_optimizer = torch.optim.Adam(self.q2.parameters(), lr=params["q_lr"])
-        self.alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=params["alpha_lr"])
+        self.q1_optimizer = torch.optim.Adam(
+            self.q1.parameters(), lr=params["q_lr"]
+        )
+        self.q2_optimizer = torch.optim.Adam(
+            self.q2.parameters(), lr=params["q_lr"]
+        )
+        self.alpha_optimizer = torch.optim.Adam(
+            [self.log_alpha], lr=params["alpha_lr"]
+        )
 
         self.total_steps = 0
 
@@ -162,7 +176,9 @@ class SAC:
                 + self.params["tau"] * source_param.data
             )
 
-    def select_action(self, state: np.ndarray, evaluation: bool = False) -> np.ndarray:
+    def select_action(
+        self, state: np.ndarray, evaluation: bool = False
+    ) -> np.ndarray:
         """Sample action from policy, optionally without exploring for evaluation."""
         workspace = Workspace()
         state_tensor = torch.FloatTensor(state[None, ...])
@@ -343,7 +359,9 @@ class SAC:
 
             if len(episode_rewards) >= 10:
                 avg_reward = np.mean(episode_rewards[-10:])
-                progress.set_postfix({"avg_reward": f"{avg_reward:.2f}"}, refresh=True)
+                progress.set_postfix(
+                    {"avg_reward": f"{avg_reward:.2f}"}, refresh=True
+                )
 
         return {"episode_rewards": episode_rewards}
 

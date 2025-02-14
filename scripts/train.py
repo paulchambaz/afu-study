@@ -190,7 +190,9 @@ def train_demo_v2(algo, env_name) -> None:
 
         if len(episode_rewards) >= 10:
             avg_reward = np.mean(episode_rewards[-10:])
-            progress.set_postfix({"avg_reward": f"{avg_reward:.2f}"}, refresh=True)
+            progress.set_postfix(
+                {"avg_reward": f"{avg_reward:.2f}"}, refresh=True
+            )
 
     # Save results and demonstrate
     metrics = {"episode_rewards": episode_rewards}
