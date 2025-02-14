@@ -14,13 +14,13 @@ demo:
   python -m scripts.demo
 
 test:
-    pytest
+  pytest
 
 fmt:
-    black .
+  ruff format
 
 lint:
-  pylint afu
+  ruff check afu
 
 report:
   typst compile paper/paper.typ

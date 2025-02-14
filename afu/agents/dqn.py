@@ -4,7 +4,6 @@ import torch.nn as nn
 import random
 import numpy as np
 from bbrl.agents import Agent  # type: ignore
-from bbrl.agents import Agents, TemporalAgent
 from bbrl_utils.nn import build_mlp  # type: ignore
 from bbrl.workspace import Workspace  # type: ignore
 from gymnasium.spaces import Discrete  # type: ignore
