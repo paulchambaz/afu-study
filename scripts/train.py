@@ -1,6 +1,6 @@
 import gymnasium as gym
 import numpy as np
-from afu.agents.dqn import DQN, DQNAgent
+from afu.agents.dqn import DQN
 from afu.agents.ddpg import DDPG
 from afu.agents.sac import SAC
 from afu.agents.afu import AFU
@@ -124,7 +124,7 @@ def demo_run(agent, env_name, render=True):
     done = False
 
     while not done:
-        action = agent.get_action(state, evaluation=True)
+        action = agent.select_action(state, evaluation=True)
         state, reward, terminated, truncated, _ = env.step(action)
         done = terminated or truncated
         total_reward += reward
