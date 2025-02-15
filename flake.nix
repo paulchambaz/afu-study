@@ -329,6 +329,7 @@
           freetype
           dbus
           ffmpeg
+          hivemind
 
           qt6.full
           qt6.qtbase

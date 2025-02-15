@@ -1,0 +1,29 @@
+---
+title: Benchmark
+description: Benchmark all algorithms on all environments for both on-policy and off-policy
+runs: 15
+
+experiments:
+  - title: On-policy CartPole DDPG
+    cmd: python -m scripts.evaluate --algo ddpg --policy on --env cartpole
+    output: results/on-policy-ddpg-cartpole.pk
+
+  - title: On-policy CartPole SAC
+    cmd: python -m scripts.evaluate --algo sac --policy on --env cartpole
+    output: results/on-policy-sac-cartpole.pk
+
+  - title: On-policy CartPole AFU Perrin
+    cmd: python -m scripts.evaluate --algo afuperrin --policy on --env cartpole
+    output: results/on-policy-afu-cartpole.pk
+
+  - title: Off-policy CartPole DDPG
+    cmd: python -m scripts.evaluate --algo ddpg --policy off --env cartpole
+    output: results/off-policy-ddpg-cartpole.pk
+
+  - title: Off-policy CartPole SAC
+    cmd: python -m scripts.evaluate --algo sac --policy off --env cartpole
+    output: results/off-policy-sac-cartpole.pk
+
+  - title: Off-policy CartPole AFU Perrin
+    cmd: python -m scripts.evaluate --algo afuperrin --policy off --env cartpole
+    output: results/off-policy-afu-cartpole.pk

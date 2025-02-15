@@ -1,19 +1,21 @@
-from . import actors
-from . import critics
 from . import memory
-from . import sac
-from . import td3
-from . import base
+from . import afu
 from . import afu_alpha
 from . import afu_beta
+from . import afu_perrin
+from . import ddpg
+from . import dqn
+from . import sac
+from . import td3
 
 __all__ = [
-    "actors",
-    "critics",
     "memory",
-    "sac",
-    "td3",
-    "base",
+    "afu",
     "afu_alpha",
     "afu_beta",
+    "afu_perrin",
+    "ddpg",
+    "dqn",
+    "sac",
+    "td3",
 ]
