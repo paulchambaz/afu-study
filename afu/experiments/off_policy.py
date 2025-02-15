@@ -1,5 +1,4 @@
 from .base import Experiment
-import gymnasium as gym
 import numpy as np
 from tqdm import tqdm  # type: ignore
 
@@ -68,19 +67,18 @@ class OffPolicy(Experiment):
                 self.results["metadata"]["total_steps"] += 1
                 rewards.append(reward)
 
-                if len(rewards) >= 10:
-                    metrics = {
-                        "avg_reward": np.mean(rewards[-10:]),
-                        "steps": self.results["metadata"]["total_steps"],
-                    }
-                    self.log_metrics(step, metrics)
-                    progress.set_postfix({"avg_reward": f"{metrics['avg_reward']:.2f}"})
-
                 if training_steps % self.params["interval"] == 0:
                     results = self.evaluation(agent)
+
                     id = training_steps // self.params["interval"]
                     if id not in self.results["rewards"]:
                         self.results["rewards"][id] = []
                     self.results["rewards"][id].extend(results)
+
+                    min_val, q1, iqm, q3, max_val = self._compute_stats(results)
+                    stats_str = (
+                        f"[{min_val:.1f}|{q1:.1f}|{iqm:.1f}|{q3:.1f}|{max_val:.1f}]"
+                    )
+                    progress.set_postfix({"eval": stats_str})
 
         self.save_results()

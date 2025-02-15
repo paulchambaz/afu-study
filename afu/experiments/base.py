@@ -27,6 +27,15 @@ class Experiment(ABC):
         self.observation_space = self.env.unwrapped.get_observation_space()
         self.action_space = self.env.unwrapped.get_action_space()
 
+    def _compute_stats(self, data):
+        data = np.array(data)
+        min_val = np.min(data)
+        max_val = np.max(data)
+        q1, q3 = np.percentile(data, [25, 75])
+        mask = (data >= q1) & (data <= q3)
+        iqm = np.mean(data[mask])
+        return min_val, q1, iqm, q3, max_val
+
     def _generate_seed(self) -> int:
         return int(time.time() * 1000) % (2**32 - 1)
 
@@ -43,7 +52,7 @@ class Experiment(ABC):
         scaled = normalized * (target_high - target_low) + target_low
         return scaled
 
-    def evaluation(self, agent, n=10):
+    def evaluation(self, agent, n=11):
         env = gym.make(self.env_name)
         env.reset(seed=self.results["metadata"]["seed"])
         results = []

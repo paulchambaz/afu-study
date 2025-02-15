@@ -1,5 +1,4 @@
 from .base import Experiment
-import numpy as np
 from tqdm import tqdm  # type: ignore
 
 
@@ -29,16 +28,17 @@ class OnPolicy(Experiment):
             "learning_rate": 3e-4,
         }
 
-        for i in range(self.param["n"]):
+        for i in range(self.params["n"]):
             training_steps = 0
             agent = self.algo(params)
             rewards = []
 
             progress = tqdm(
-                range(params["total_steps"]), desc=f"Training {i}/{self.params['n']}"
+                range(self.params["total_steps"]),
+                desc=f"Training {i}/{self.params['n']}",
             )
 
-            for step in progress:
+            while training_steps < self.params["total_steps"]:
                 state, _ = agent.train_env.reset()
                 reward = 0.0
 
@@ -62,24 +62,27 @@ class OnPolicy(Experiment):
 
                     progress.update(1)
 
-                    if len(rewards) >= 10:
-                        metrics = {
-                            "avg_reward": np.mean(rewards[-10:]),
-                            "steps": self.results["metadata"]["total_steps"],
-                        }
-                        self.log_metrics(step, metrics)
-                        progress.set_postfix(
-                            {"avg_reward": f"{metrics['avg_reward']:.2f}"}
-                        )
-
                     if training_steps % self.params["interval"] == 0:
                         results = self.evaluation(agent)
+
                         id = training_steps // self.params["interval"]
                         if id not in self.results["rewards"]:
                             self.results["rewards"][id] = []
                         self.results["rewards"][id].extend(results)
 
+                        min_val, q1, iqm, q3, max_val = self._compute_stats(results)
+                        stats_str = (
+                            f"[{min_val:.1f}|{q1:.1f}|{iqm:.1f}|{q3:.1f}|{max_val:.1f}]"
+                        )
+                        progress.set_postfix({"eval": stats_str})
+
                     if done:
                         break
+
+                    if training_steps >= self.params["total_steps"]:
+                        break
+                
+                if training_steps >= self.params["total_steps"]:
+                    break
 
         self.save_results()
