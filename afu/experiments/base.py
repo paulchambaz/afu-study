@@ -35,11 +35,10 @@ class Experiment(ABC):
         random.seed(seed)
         np.random.seed(seed)
 
-
-    def _scale_action(self, action, source_space, target_space):
-        source_low, source_high = (np.array([-1.0]), np.array([1.0]))  
+    def _scale_action(self, action, target_space):
+        source_low, source_high = (np.array([-1.0]), np.array([1.0]))
         target_low, target_high = target_space
-        
+
         normalized = (action - source_low) / (source_high - source_low)
         scaled = normalized * (target_high - target_low) + target_low
         return scaled
@@ -56,7 +55,7 @@ class Experiment(ABC):
 
             while not done:
                 action = agent.select_action(observation, evaluation=True)
-                action = self._scale_action(action, self.env.unwrapped.get_action_space())
+                action = self._scale_action(action, self.action_space)
                 observation, reward, terminated, truncated, _ = env.step(action)
                 done = terminated or truncated
                 total_reward += reward
