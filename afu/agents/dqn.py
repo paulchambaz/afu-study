@@ -8,15 +8,13 @@ from bbrl_utils.nn import build_mlp  # type: ignore
 from bbrl.workspace import Workspace  # type: ignore
 from gymnasium.spaces import Discrete  # type: ignore
 from .memory import ReplayBuffer
-from tqdm import tqdm
+from tqdm import tqdm  # type: ignore
 
 
 class DiscreteQNetwork(Agent):
     """A neural network that maps states to Q-values for discrete actions."""
 
-    def __init__(
-        self, state_dim: int, hidden_size: list[int], action_dim: int
-    ) -> None:
+    def __init__(self, state_dim: int, hidden_size: list[int], action_dim: int) -> None:
         """Initialize Q-network with given dimensions."""
         super().__init__()
 
@@ -95,9 +93,7 @@ class DQN:
 
         self.total_steps = 0
 
-    def select_action(
-        self, state: np.ndarray, evaluation: bool = False
-    ) -> np.ndarray:
+    def select_action(self, state: np.ndarray, evaluation: bool = False) -> np.ndarray:
         """Choose action using epsilon-greedy strategy to balance exploration and exploitation."""
 
         # During evaluation, we don't explore (epsilon = 0). During training, epsilon
@@ -165,9 +161,7 @@ class DQN:
         # detach() prevents us from trying to optimize the target network
         targets = (
             rewards
-            + (1 - dones)
-            * self.params["gamma"]
-            * next_q_values.max(1)[0].detach()
+            + (1 - dones) * self.params["gamma"] * next_q_values.max(1)[0].detach()
         )
 
         # Compare our predictions (q_values) to what actually happened (targets)
@@ -226,9 +220,7 @@ class DQN:
 
             if len(episode_rewards) >= 10:
                 avg_reward = np.mean(episode_rewards[-10:])
-                progress.set_postfix(
-                    {"avg_reward": f"{avg_reward:.2f}"}, refresh=True
-                )
+                progress.set_postfix({"avg_reward": f"{avg_reward:.2f}"}, refresh=True)
 
         return {"episode_rewards": episode_rewards}
 
@@ -236,7 +228,7 @@ class DQN:
         """Save the complete state of the DQN agent to disk."""
 
         # Save everything needed to restore the agent: network weights,
-        # optimizer state, parameters, and training progress
+        # optimizer state, parameters and training progress
         save_dict = {
             "q_network_state": self.q_network.state_dict(),
             "target_network_state": self.target_network.state_dict(),
@@ -272,3 +264,50 @@ class DQN:
         agent = cls(save_dict["params"])
         agent.load(path)
         return agent
+
+
+class QValueAgent(Agent):
+    """Agent that computes Q-values from states using a neural network."""
+
+    def __init__(self, state_dim: int, hidden_size: list[int], action_dim: int):
+        super().__init__()
+        self.model = build_mlp(
+            [state_dim] + hidden_size + [action_dim], activation=nn.ReLU()
+        )
+
+    def forward(self, t: int) -> None:
+        obs = self.get(("env/env_obs", t))
+        q_values = self.model(obs)
+        self.set(("q_values", t), q_values)
+
+
+class EpsilonGreedyAgent(Agent):
+    """Agent that selects actions using an epsilon-greedy policy."""
+
+    def __init__(self, action_space, epsilon_start, epsilon_end, epsilon_decay):
+        super().__init__()
+        self.action_space = action_space
+        self.epsilon_start = epsilon_start
+        self.epsilon_end = epsilon_end
+        self.epsilon_decay = epsilon_decay
+        self.total_steps = 0
+
+    def forward(self, t: int) -> None:
+        epsilon = self.epsilon_end + (self.epsilon_start - self.epsilon_end) * np.exp(
+            -self.total_steps / self.epsilon_decay
+        )
+
+        q_values = self.get(("q_values", t))
+        batch_size = q_values.shape[0]
+
+        # Epsilon-greedy selection
+        if random.random() > epsilon:
+            action = q_values.argmax(dim=1)
+        else:
+            action = torch.tensor(
+                [self.action_space.sample() for _ in range(batch_size)],
+                dtype=torch.long,
+            )
+
+        self.set(("action", t), action)
+        self.total_steps += 1

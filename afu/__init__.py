@@ -1,7 +1,5 @@
 from . import agents
 from . import environments
-from . import models
-from . import training
-from . import utils
+from . import experiments
 
-__all__ = ["agents", "environments", "models", "training", "utils"]
+__all__ = ["agents", "environments", "experiments"]

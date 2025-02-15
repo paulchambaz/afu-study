@@ -1,4 +1,5 @@
 from bbrl_gymnasium.envs.continuous_cartpole import ContinuousCartPoleEnv  # type: ignore
+import numpy as np
 from gymnasium.envs.registration import register
 
 
@@ -11,6 +12,18 @@ class ContinuousCartPoleEnvStudy(ContinuousCartPoleEnv):
             cart_velocity,
             pole_angle,
             pole_angular_velocity,
+        )
+
+    def get_observation_space(self):
+        return (
+            np.array([-4.8, -8.0, -0.418, -8.0]),
+            np.array([4.8, 8.0, 0.418, 8.0]),
+        )
+
+    def get_action_space(self):
+        return (
+            np.array([-1.0]),
+            np.array([1.0]),
         )
 
 

@@ -57,5 +57,18 @@ class ReplayBuffer:
 
         return states, actions, rewards, next_states, dones
 
+    def get_latest(self):
+        """Retrieve the most recently added transition."""
+
+        latest = self.buffer[-1]
+
+        state = np.array(latest[0])
+        action = np.array(latest[1])
+        reward = np.array(latest[2])
+        next_state = np.array(latest[3])
+        done = np.array(latest[4])
+
+        return state, action, reward, next_state, done
+
     def __len__(self):
         return len(self.buffer)
