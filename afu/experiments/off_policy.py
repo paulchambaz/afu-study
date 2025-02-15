@@ -30,10 +30,8 @@ class OffPolicy(Experiment):
             "gradient_reduction": 0.8,
             "learning_rate": 3e-4,
         }
+        obs_scale_factor = 0.5
 
-        training_rewards = {}
-
-        env = gym.make(self.env_name)
         for i in range(self.params["n"]):
             training_steps = 0
             agent = self.algo(params)
@@ -48,7 +46,9 @@ class OffPolicy(Experiment):
                 agent.train_env.reset()
 
                 obs_low, obs_high = self.observation_space
-                random_state = np.random.uniform(low=obs_low * 0.5, high=obs_high * 0.5)
+                random_state = np.random.uniform(
+                    low=obs_low * obs_scale_factor, high=obs_high * obs_scale_factor
+                )
                 agent.train_env.unwrapped.set_state(*random_state)
 
                 act_low, act_high = self.action_space
@@ -68,21 +68,19 @@ class OffPolicy(Experiment):
                 self.results["metadata"]["total_steps"] += 1
                 rewards.append(reward)
 
-                # just for display
                 if len(rewards) >= 10:
                     metrics = {
                         "avg_reward": np.mean(rewards[-10:]),
-                        "steps": self.results["metadata"]["total_steps"]
+                        "steps": self.results["metadata"]["total_steps"],
                     }
                     self.log_metrics(step, metrics)
                     progress.set_postfix({"avg_reward": f"{metrics['avg_reward']:.2f}"})
 
                 if training_steps % self.params["interval"] == 0:
-                    results = self.evaluation(agent, self.env_name)
+                    results = self.evaluation(agent)
                     id = training_steps // self.params["interval"]
-                    if id not in training_rewards:
-                        training_rewards[id] = []
-                    training_rewards[id].extend(results)
+                    if id not in self.results["rewards"]:
+                        self.results["rewards"][id] = []
+                    self.results["rewards"][id].extend(results)
 
-        env.close()
         self.save_results()

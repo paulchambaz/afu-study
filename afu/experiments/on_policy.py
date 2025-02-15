@@ -16,7 +16,6 @@ class OnPolicy(Experiment):
             "tau": 0.01,
             "gamma": 0.99,
             "batch_size": 128,
-            "max_episodes": self.params["total_episodes"],
             "max_steps": 500,
             "policy_hidden_size": [128, 128],
             "q_hidden_size": [128, 128],
@@ -30,56 +29,57 @@ class OnPolicy(Experiment):
             "learning_rate": 3e-4,
         }
 
-        training_rewards = {}
-
         for i in range(self.param["n"]):
             training_steps = 0
-
-            episode_rewards = []
             agent = self.algo(params)
+            rewards = []
+
             progress = tqdm(
-                range(params["max_episodes"]), desc=f"Training {i}/{self.params['n']}"
+                range(params["total_steps"]), desc=f"Training {i}/{self.params['n']}"
             )
 
-            for episode in progress:
+            for step in progress:
                 state, _ = agent.train_env.reset()
-                episode_reward = 0.0
+                reward = 0.0
 
                 for step in range(agent.params["max_steps"]):
                     action = agent.select_action(state)
-                    (
-                        next_state,
-                        reward,
-                        terminated,
-                        truncated,
-                        _,
-                    ) = agent.train_env.step(action)
+                    action = self._scale_action(action, self.action_space)
+                    next_state, reward, terminated, truncated, _ = agent.train_env.step(
+                        action
+                    )
                     done = terminated or truncated
 
                     agent.replay_buffer.push(state, action, reward, next_state, done)
                     agent.update()
 
-                    state = next_state
-                    episode_reward += float(reward)
+                    reward += float(reward)
                     agent.total_steps += 1
                     training_steps += 1
 
+                    self.results["metadata"]["total_steps"] += 1
+                    rewards.append(reward)
+
+                    progress.update(1)
+
+                    if len(rewards) >= 10:
+                        metrics = {
+                            "avg_reward": np.mean(rewards[-10:]),
+                            "steps": self.results["metadata"]["total_steps"],
+                        }
+                        self.log_metrics(step, metrics)
+                        progress.set_postfix(
+                            {"avg_reward": f"{metrics['avg_reward']:.2f}"}
+                        )
+
                     if training_steps % self.params["interval"] == 0:
-                        results = self.evaluation(agent, self.env_name)
-                        id = training_steps / self.params["interval"]
-                        if id not in training_rewards:
-                            training_rewards[id] = []
-                        training_rewards[id].extend(results)
+                        results = self.evaluation(agent)
+                        id = training_steps // self.params["interval"]
+                        if id not in self.results["rewards"]:
+                            self.results["rewards"][id] = []
+                        self.results["rewards"][id].extend(results)
 
                     if done:
                         break
-
-                episode_rewards.append(episode_reward)
-
-                if len(episode_rewards) >= 10:
-                    avg_reward = np.mean(episode_rewards[-10:])
-                    progress.set_postfix(
-                        {"avg_reward": f"{avg_reward:.2f}"}, refresh=True
-                    )
 
         self.save_results()
