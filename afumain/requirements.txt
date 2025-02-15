@@ -1,0 +1,11 @@
+joblib
+numpy
+pandas
+imageio
+matplotlib
+jax
+optax
+dm-haiku
+tensorboardX
+gymnasium
+mujoco
