@@ -48,17 +48,17 @@ class Experiment(ABC):
         random.seed(seed)
         np.random.seed(seed)
 
-    def scale_action(self, action, target_space):
+    def _scale_action(self, action, target_space):
         source_low, source_high = -1.0, 1.0
         target_low, target_high = target_space
-        
+
         action = np.clip(action, source_low, source_high)
-        
+
         normalized = (action - source_low) / (source_high - source_low)
         scaled = normalized * (target_high - target_low) + target_low
-        
+
         scaled = np.clip(scaled, target_low, target_high)
-        
+
         return scaled
 
     def evaluation(self, agent, n=11):

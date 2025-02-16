@@ -171,10 +171,18 @@ class AFU:
         # Value & Critic networks
         self.v1 = ContinuousVFunction(state_dim, params["hidden_size"], prefix="v1/")
         self.v2 = ContinuousVFunction(state_dim, params["hidden_size"], prefix="v2/")
-        self.target_v1 = ContinuousVFunction(state_dim, params["hidden_size"], prefix="target_v1/")
-        self.target_v2 = ContinuousVFunction(state_dim, params["hidden_size"], prefix="target_v2/")
-        self.q1 = ContiniousQFunction(state_dim, action_dim, params["hidden_size"], prefix="q1/")
-        self.q2 = ContiniousQFunction(state_dim, action_dim, params["hidden_size"], prefix="q2/")
+        self.target_v1 = ContinuousVFunction(
+            state_dim, params["hidden_size"], prefix="target_v1/"
+        )
+        self.target_v2 = ContinuousVFunction(
+            state_dim, params["hidden_size"], prefix="target_v2/"
+        )
+        self.q1 = ContiniousQFunction(
+            state_dim, action_dim, params["hidden_size"], prefix="q1/"
+        )
+        self.q2 = ContiniousQFunction(
+            state_dim, action_dim, params["hidden_size"], prefix="q2/"
+        )
 
         # Policy network
         self.policy = GaussianPolicy(
@@ -187,31 +195,48 @@ class AFU:
 
         # If in AFU-Beta mode, initialize μ_ζ (deterministic actor guidance)
         if self.mode == "beta":
-            self.mu_zeta = build_mlp([state_dim] + params["hidden_size"] + [action_dim], activation=nn.ReLU())
-            self.mu_zeta_optimizer = torch.optim.Adam(self.mu_zeta.parameters(), lr=params["learning_rate"])
+            self.mu_zeta = build_mlp(
+                [state_dim] + params["hidden_size"] + [action_dim], activation=nn.ReLU()
+            )
+            self.mu_zeta_optimizer = torch.optim.Adam(
+                self.mu_zeta.parameters(), lr=params["learning_rate"]
+            )
 
         self.replay_buffer = ReplayBuffer(params["replay_size"])
 
         self.log_alpha = torch.zeros(1, requires_grad=True)
 
         # Optimizers
-        self.q1_optimizer = torch.optim.Adam(self.q1.parameters(), lr=params["learning_rate"])
-        self.q2_optimizer = torch.optim.Adam(self.q2.parameters(), lr=params["learning_rate"])
-        self.v1_optimizer = torch.optim.Adam(self.v1.parameters(), lr=params["learning_rate"])
-        self.v2_optimizer = torch.optim.Adam(self.v2.parameters(), lr=params["learning_rate"])
-        self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=params["learning_rate"])
-        self.alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=params["learning_rate"])
+        self.q1_optimizer = torch.optim.Adam(
+            self.q1.parameters(), lr=params["learning_rate"]
+        )
+        self.q2_optimizer = torch.optim.Adam(
+            self.q2.parameters(), lr=params["learning_rate"]
+        )
+        self.v1_optimizer = torch.optim.Adam(
+            self.v1.parameters(), lr=params["learning_rate"]
+        )
+        self.v2_optimizer = torch.optim.Adam(
+            self.v2.parameters(), lr=params["learning_rate"]
+        )
+        self.policy_optimizer = torch.optim.Adam(
+            self.policy.parameters(), lr=params["learning_rate"]
+        )
+        self.alpha_optimizer = torch.optim.Adam(
+            [self.log_alpha], lr=params["learning_rate"]
+        )
 
         self.total_steps = 0
 
-
-    def _soft_update(self, source_network: nn.Module, target_network: nn.Module) -> None:
+    def _soft_update(
+        self, source_network: nn.Module, target_network: nn.Module
+    ) -> None:
         """Perform a soft update using state_dict blending for efficiency."""
         for name, param in target_network.named_parameters():
             param.data.copy_(
-                (1 - self.params["tau"]) * param.data + self.params["tau"] * source_network.state_dict()[name].data
+                (1 - self.params["tau"]) * param.data
+                + self.params["tau"] * source_network.state_dict()[name].data
             )
-
 
     def select_action(self, state: np.ndarray, evaluation: bool = False) -> np.ndarray:
         workspace = Workspace()
@@ -227,7 +252,6 @@ class AFU:
             action = workspace.get("action", 0)
 
         return action.detach().numpy()[0]
-
 
     def _compute_critic_loss(self, workspace: Workspace) -> torch.Tensor:
         """Compute loss for Q-functions (critic) using AFU's method with BBRL.
@@ -247,8 +271,9 @@ class AFU:
 
         return loss_q1 + loss_q2
 
-
-    def _compute_actor_loss(self, workspace: Workspace) -> tuple[torch.Tensor, torch.Tensor]:
+    def _compute_actor_loss(
+        self, workspace: Workspace
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute policy loss including entropy term, with mode-dependent updates.
 
         * workspace: BBRL Workspace containing states and actions
@@ -257,7 +282,9 @@ class AFU:
         states = workspace.get("env/env_obs", 0)
         sampled_actions = workspace.get("action", 0)
         log_probs = workspace.get("log_prob", 0)
-        q_values = self.q1.model(torch.cat([states, sampled_actions], dim=1)).squeeze(-1)
+        q_values = self.q1.model(torch.cat([states, sampled_actions], dim=1)).squeeze(
+            -1
+        )
 
         # Standard SAC-style actor loss (used in both Alpha and Beta)
         policy_loss = (self.log_alpha.exp() * log_probs - q_values).mean()
@@ -276,17 +303,22 @@ class AFU:
             self.mu_zeta_optimizer.step()
 
             # Modify policy gradient to avoid local optima
-            grad = torch.autograd.grad(policy_loss, sampled_actions, retain_graph=True)[0]
+            grad = torch.autograd.grad(policy_loss, sampled_actions, retain_graph=True)[
+                0
+            ]
             correction = mu_pred - sampled_actions
             dot_product = (grad * correction).sum(dim=-1, keepdim=True)
 
             if (dot_product < 0).any():  # If gradients point in the wrong direction
-                grad = grad - ((grad * correction).sum() / (correction.norm() ** 2 + 1e-6)) * correction
+                grad = (
+                    grad
+                    - ((grad * correction).sum() / (correction.norm() ** 2 + 1e-6))
+                    * correction
+                )
 
             policy_loss = (grad.detach() * sampled_actions).sum()
 
         return policy_loss, temperature_loss
-
 
     def _adjust_temperature(self, workspace: Workspace) -> torch.Tensor:
         """Adjust entropy temperature dynamically using BBRL.
@@ -305,10 +337,9 @@ class AFU:
 
         return temperature_loss.item()
 
-
     def _compute_targets(self, workspace: Workspace) -> None:
         """Compute target values for critic updates using the target value networks."""
-        
+
         rewards = workspace.get_full("reward")
         next_states = workspace.get_full("next_env/env_obs")
         dones = workspace.get_full("done")
@@ -337,7 +368,6 @@ class AFU:
         # Store targets in the workspace
         workspace.set_full("target_q", targets)
 
-
     def update(self) -> tuple[float, float, float, float]:
         """Perform one update step for Alpha or Beta mode."""
         if self.replay_buffer.size() < self.params["batch_size"]:
@@ -349,7 +379,7 @@ class AFU:
         actions = workspace.get_full("action")
         rewards = workspace.get_full("reward")
         next_states = workspace.get_full("next_env/env_obs")
-        dones = workspace.get_full("done").float() 
+        dones = workspace.get_full("done").float()
 
         # Compute targets for critic loss
         self._compute_targets(workspace)
@@ -364,16 +394,16 @@ class AFU:
 
         # Compute value loss
         with torch.no_grad():
-            q1_values = self.q1.model(torch.cat([states, 
-                                                actions], dim=1)).squeeze(-1)
-            q2_values = self.q2.model(torch.cat([states, 
-                                                actions], dim=1)).squeeze(-1)
+            q1_values = self.q1.model(torch.cat([states, actions], dim=1)).squeeze(-1)
+            q2_values = self.q2.model(torch.cat([states, actions], dim=1)).squeeze(-1)
             min_q_values = torch.min(q1_values, q2_values)
 
         v1_values = self.v1.model(states).squeeze(-1)
         v2_values = self.v2.model(states).squeeze(-1)
 
-        value_loss = ((v1_values - min_q_values) ** 2).mean() + ((v2_values - min_q_values) ** 2).mean()
+        value_loss = ((v1_values - min_q_values) ** 2).mean() + (
+            (v2_values - min_q_values) ** 2
+        ).mean()
         self.v1_optimizer.zero_grad()
         self.v2_optimizer.zero_grad()
         value_loss.backward()
@@ -398,8 +428,12 @@ class AFU:
         self._soft_update(self.v1, self.target_v1)
         self._soft_update(self.v2, self.target_v2)
 
-        return policy_loss.item(), critic_loss.item(), value_loss.item(), temperature_loss.item()
-
+        return (
+            policy_loss.item(),
+            critic_loss.item(),
+            value_loss.item(),
+            temperature_loss.item(),
+        )
 
     def train(self) -> dict:
         """Train the agent over multiple episodes using replay buffer."""
@@ -413,16 +447,26 @@ class AFU:
             for step in range(self.params["max_steps"]):
                 action = self.select_action(state)
 
-                next_state, reward, terminated, truncated, _ = self.train_env.step(action)
+                next_state, reward, terminated, truncated, _ = self.train_env.step(
+                    action
+                )
                 done = terminated or truncated
 
                 # Ensure proper batch dimensions
                 workspace = Workspace()
-                workspace.set_full("env/env_obs", torch.tensor([state], dtype=torch.float32))  
-                workspace.set_full("action", torch.tensor([action], dtype=torch.float32))  
-                workspace.set_full("reward", torch.tensor([[reward]], dtype=torch.float32))
-                workspace.set_full("next_env/env_obs", torch.tensor([next_state], dtype=torch.float32))  
-                workspace.set_full("done", torch.tensor([[done]], dtype=torch.float32))  
+                workspace.set_full(
+                    "env/env_obs", torch.tensor([state], dtype=torch.float32)
+                )
+                workspace.set_full(
+                    "action", torch.tensor([action], dtype=torch.float32)
+                )
+                workspace.set_full(
+                    "reward", torch.tensor([[reward]], dtype=torch.float32)
+                )
+                workspace.set_full(
+                    "next_env/env_obs", torch.tensor([next_state], dtype=torch.float32)
+                )
+                workspace.set_full("done", torch.tensor([[done]], dtype=torch.float32))
 
                 self.replay_buffer.put(workspace)
 
@@ -441,7 +485,6 @@ class AFU:
                 progress.set_postfix({"avg_reward": f"{avg_reward:.2f}"}, refresh=True)
 
         return {"episode_rewards": episode_rewards}
-    
 
     def save(self, path: str) -> None:
         """Save model parameters and training state."""
@@ -465,7 +508,6 @@ class AFU:
         }
         torch.save(save_dict, path)
 
-
     def load(self, path: str) -> None:
         """Load model parameters and training state."""
         save_dict = torch.load(path)
@@ -488,7 +530,6 @@ class AFU:
         self.log_alpha = save_dict["log_alpha"]
         self.params = save_dict["params"]
         self.total_steps = save_dict["total_steps"]
-
 
     @classmethod
     def load_agent(cls, path: str) -> "AFU":

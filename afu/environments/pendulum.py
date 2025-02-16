@@ -8,16 +8,10 @@ class PendulumEnvStudy(PendulumEnv):
         self.state = (theta, theta_dot)
 
     def get_observation_space(self):
-        return (
-            np.array([-1.0, -1.0, -8.0]),
-            np.array([1.0, 1.0, 8.0])
-        )
-    
+        return (np.array([-1.0, -1.0, -8.0]), np.array([1.0, 1.0, 8.0]))
+
     def get_action_space(self):
-        return (
-            np.array([-2.0]),
-            np.array([2.0])
-        )
+        return (np.array([-2.0]), np.array([2.0]))
 
 
 register(
