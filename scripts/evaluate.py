@@ -1,9 +1,13 @@
+import gymnasium as gym # noqa
+
 from afu.agents.ddpg import DDPG
 from afu.agents.sac import SAC
 from afu.agents.afu import AFU
+
 from afu.agents.afu_perrin import AFUPerrin
 from afu.experiments.off_policy import OffPolicy
 from afu.experiments.on_policy import OnPolicy
+from afu.experiments.test import NewExperiment
 import argparse
 
 
@@ -20,7 +24,7 @@ def get_env(name: str):
 
 
 def get_experiment(name: str):
-    experiments = {"onpolicy": OnPolicy, "offpolicy": OffPolicy}
+    experiments = {"onpolicy": OnPolicy, "offpolicy": OffPolicy, "test": NewExperiment}
     return experiments[name.lower()]
 
 
@@ -31,14 +35,7 @@ def main() -> None:
         type=str,
         choices=["ddpg", "sac", "afu", "afuperrin"],
         required=True,
-        help="Algorithm to train (ddpg, sac, afu or afuperrin)",
-    )
-    parser.add_argument(
-        "--experiment",
-        type=str,
-        choices=["onpolicy", "offpolicy"],
-        required=True,
-        help="Experiment to run (onpolicy, offpolicy)",
+        help="Algorithm to train (DDPG, SAC, or AFU)",
     )
     parser.add_argument(
         "--env",
@@ -46,6 +43,13 @@ def main() -> None:
         choices=["cartpole"],
         required=True,
         help="Environment (cartpole)",
+    )
+    parser.add_argument(
+        "--experiment",
+        type=str,
+        choices=["onpolicy", "offpolicy", "test"],
+        required=True,
+        help="Experiment to run (onpolicy, offpolicy)",
     )
     parser.add_argument(
         "--run",
@@ -65,7 +69,7 @@ def main() -> None:
         "--steps",
         type=int,
         required=False,
-        default=100_000,
+        default=50_000,
         help="Max number of steps for the experiment",
     )
     parser.add_argument(
@@ -79,15 +83,14 @@ def main() -> None:
     experiment = get_experiment(args.experiment)
 
     experiment(
-        algo,
-        env_name,
-        {
+        algo=algo,
+        env_name=env_name,
+        params={
             "n": args.run,
             "interval": args.interval,
             "total_steps": args.steps,
-            "total_episodes": 500,
         },
-        args.seed,
+        seed=args.seed,
     ).run()
 
 

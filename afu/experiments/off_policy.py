@@ -15,7 +15,7 @@ class OffPolicy(Experiment):
             "critic_lr": 3e-4,
             "tau": 0.01,
             "gamma": 0.99,
-            "batch_size": 128,
+            "batch_size": 32,
             "max_episodes": 500,
             "max_steps": 500,
             "policy_hidden_size": [128, 128],
@@ -34,7 +34,6 @@ class OffPolicy(Experiment):
         for i in range(self.params["n"]):
             training_steps = 0
             agent = self.algo(params)
-            rewards = []
 
             progress = tqdm(
                 range(self.params["total_steps"]),
@@ -51,21 +50,22 @@ class OffPolicy(Experiment):
                 agent.train_env.unwrapped.set_state(*random_state)
 
                 act_low, act_high = self.action_space
-                action = np.random.uniform(low=act_low, high=act_high)
+                action = np.random.uniform(low=-1.0, high=1.0, size=(1,))
+
                 next_state, reward, terminated, truncated, _ = agent.train_env.step(
                     action
                 )
+
                 done = terminated or truncated
 
                 agent.replay_buffer.push(random_state, action, reward, next_state, done)
+
                 agent.update()
 
-                reward += float(reward)
                 agent.total_steps += 1
                 training_steps += 1
 
                 self.results["metadata"]["total_steps"] += 1
-                rewards.append(reward)
 
                 if training_steps % self.params["interval"] == 0:
                     results = self.evaluation(agent)
@@ -75,10 +75,6 @@ class OffPolicy(Experiment):
                         self.results["rewards"][id] = []
                     self.results["rewards"][id].extend(results)
 
-                    min_val, q1, iqm, q3, max_val = self._compute_stats(results)
-                    stats_str = (
-                        f"[{min_val:.1f}|{q1:.1f}|{iqm:.1f}|{q3:.1f}|{max_val:.1f}]"
-                    )
-                    progress.set_postfix({"eval": stats_str})
+                    progress.set_postfix({"eval": self._get_stats(results)})
 
         self.save_results()

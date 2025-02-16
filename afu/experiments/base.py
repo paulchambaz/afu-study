@@ -36,6 +36,10 @@ class Experiment(ABC):
         iqm = np.mean(data[mask])
         return min_val, q1, iqm, q3, max_val
 
+    def _get_stats(self, data):
+        min_val, q1, iqm, q3, max_val = self._compute_stats(data)
+        return f"[{min_val:.1f}|{q1:.1f}|{iqm:.1f}|{q3:.1f}|{max_val:.1f}]"
+
     def _generate_seed(self) -> int:
         return int(time.time() * 1000) % (2**32 - 1)
 
@@ -44,12 +48,17 @@ class Experiment(ABC):
         random.seed(seed)
         np.random.seed(seed)
 
-    def _scale_action(self, action, target_space):
-        source_low, source_high = (np.array([-1.0]), np.array([1.0]))
+    def scale_action(self, action, target_space):
+        source_low, source_high = -1.0, 1.0
         target_low, target_high = target_space
-
+        
+        action = np.clip(action, source_low, source_high)
+        
         normalized = (action - source_low) / (source_high - source_low)
         scaled = normalized * (target_high - target_low) + target_low
+        
+        scaled = np.clip(scaled, target_low, target_high)
+        
         return scaled
 
     def evaluation(self, agent, n=11):

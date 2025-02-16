@@ -1,6 +1,6 @@
 from bbrl_gymnasium.envs.continuous_cartpole import ContinuousCartPoleEnv  # type: ignore
-import numpy as np
 from gymnasium.envs.registration import register
+import numpy as np
 
 
 class ContinuousCartPoleEnvStudy(ContinuousCartPoleEnv):
