@@ -1,14 +1,14 @@
 run *ARGS:
-    python -m scripts.train {{ARGS}}
+  python -m scripts.train {{ARGS}}
 
 evaluate *ARGS:
-    python -m scripts.evaluate {{ARGS}}
+  python -m scripts.evaluate {{ARGS}}
 
 plot *ARGS:
-    python -m scripts.plot_results {{ARGS}}
+  python -m scripts.plot_results {{ARGS}}
 
-benchmark:
-  hivemind
+benchmark *ARGS:
+  python -m scripts.benchmark {{ARGS}}
 
 demo:
   python -m scripts.demo
