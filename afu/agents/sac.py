@@ -12,20 +12,24 @@ from tqdm import tqdm  # type: ignore
 class GaussianPolicy(Agent):
     """A neural network that outputs a Gaussian distribution over actions."""
 
-    def __init__(self, state_dim: int, hidden_size: list[int], action_dim: int) -> None:
+    def __init__(
+        self, state_dim: int, hidden_size: list[int], action_dim: int
+    ) -> None:
         """Initialize gaussian policy network with given dimensions."""
         super().__init__()
 
         self.model = build_mlp(
-            [state_dim] + hidden_size + [2 * action_dim],
+            [state_dim] + hidden_size + [action_dim],
             activation=nn.ReLU(),
         )
+
+        self.log_std = nn.Parameter(torch.zeros(action_dim))
 
     def forward(self, t: int) -> None:
         """Compute mean and log_std of action distribution for a given state."""
         obs = self.get(("env/env_obs", t))
-        output = self.model(obs)
-        mean, log_std = torch.chunk(output, 2, dim=1)
+        mean = self.model(obs)
+        log_std = self.log_std.expand_as(mean)
 
         self.set(("mean", t), mean)
         self.set(("log_std", t), log_std)
@@ -38,9 +42,6 @@ class GaussianPolicy(Agent):
         log_std = self.get(("log_std", t))
         std = log_std.exp()
 
-        # Implements the reparameterization trick for gradient propagation
-        # through the sampling process, followed by tanh transformation
-        # to bound actions.
         normal = torch.randn_like(mean)
         action = mean + std * normal
         tanh_action = torch.tanh(action)
@@ -58,8 +59,12 @@ class GaussianPolicy(Agent):
         action = self.get(("action", t))
 
         std = log_std.exp()
-        normal_log_prob = (-0.5 * ((sample - mean) / std).pow(2) - log_std).sum(dim=-1)
-        log_prob = normal_log_prob - torch.log(1 - action.pow(2) + 1e-6).sum(dim=-1)
+        normal_log_prob = (-0.5 * ((sample - mean) / std).pow(2) - log_std).sum(
+            dim=-1
+        )
+        log_prob = normal_log_prob - torch.log(1 - action.pow(2) + 1e-6).sum(
+            dim=-1
+        )
 
         self.set(("log_prob", t), log_prob)
 
@@ -112,7 +117,9 @@ class SAC:
             not hasattr(self.train_env.action_space, "shape")
             or self.train_env.action_space.shape is None
         ):
-            raise ValueError("Environment's action space must have a shape attribute")
+            raise ValueError(
+                "Environment's action space must have a shape attribute"
+            )
         action_dim = self.train_env.action_space.shape[0]
         self.action_dim = action_dim
 
@@ -144,9 +151,15 @@ class SAC:
         self.policy_optimizer = torch.optim.Adam(
             self.policy.parameters(), lr=params["policy_lr"]
         )
-        self.q1_optimizer = torch.optim.Adam(self.q1.parameters(), lr=params["q_lr"])
-        self.q2_optimizer = torch.optim.Adam(self.q2.parameters(), lr=params["q_lr"])
-        self.alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=params["alpha_lr"])
+        self.q1_optimizer = torch.optim.Adam(
+            self.q1.parameters(), lr=params["q_lr"]
+        )
+        self.q2_optimizer = torch.optim.Adam(
+            self.q2.parameters(), lr=params["q_lr"]
+        )
+        self.alpha_optimizer = torch.optim.Adam(
+            [self.log_alpha], lr=params["alpha_lr"]
+        )
 
         self.total_steps = 0
 
@@ -162,10 +175,12 @@ class SAC:
                 + self.params["tau"] * source_param.data
             )
 
-    def select_action(self, state: np.ndarray, evaluation: bool = False) -> np.ndarray:
+    def select_action(
+        self, state: np.ndarray, evaluation: bool = False
+    ) -> np.ndarray:
         """Sample action from policy, optionally without exploring for evaluation."""
         workspace = Workspace()
-        state_tensor = torch.FloatTensor(state[None, ...])
+        state_tensor = torch.FloatTensor(state)
         workspace.set("env/env_obs", 0, state_tensor)
 
         self.policy(workspace, t=0)
@@ -264,10 +279,14 @@ class SAC:
         """Update temperature parameter to maintain target entropy."""
         target_entropy = -self.action_dim
 
-        current_entropy = -log_probs
+        alpha = self.log_alpha.exp()
+        alpha_loss = -(
+            self.log_alpha * (log_probs + target_entropy).detach()
+        ).mean()
 
-        alpha_error = current_entropy - target_entropy
-        alpha_loss = -(self.log_alpha * alpha_error.detach()).mean()
+        self.alpha_optimizer.zero_grad()
+        alpha_loss.backward()
+        self.alpha_optimizer.step()
 
         return alpha_loss
 
@@ -343,7 +362,9 @@ class SAC:
 
             if len(episode_rewards) >= 10:
                 avg_reward = np.mean(episode_rewards[-10:])
-                progress.set_postfix({"avg_reward": f"{avg_reward:.2f}"}, refresh=True)
+                progress.set_postfix(
+                    {"avg_reward": f"{avg_reward:.2f}"}, refresh=True
+                )
 
         return {"episode_rewards": episode_rewards}
 

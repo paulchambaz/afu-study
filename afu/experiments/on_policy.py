@@ -31,7 +31,6 @@ class OnPolicy(Experiment):
         for i in range(self.params["n"]):
             training_steps = 0
             agent = self.algo(params)
-            rewards = []
 
             progress = tqdm(
                 range(self.params["total_steps"]),
@@ -40,7 +39,6 @@ class OnPolicy(Experiment):
 
             while training_steps < self.params["total_steps"]:
                 state, _ = agent.train_env.reset()
-                reward = 0.0
 
                 for step in range(agent.params["max_steps"]):
                     action = agent.select_action(state)
@@ -53,12 +51,11 @@ class OnPolicy(Experiment):
                     agent.replay_buffer.push(state, action, reward, next_state, done)
                     agent.update()
 
-                    reward += float(reward)
+                    state = next_state
                     agent.total_steps += 1
                     training_steps += 1
 
                     self.results["metadata"]["total_steps"] += 1
-                    rewards.append(reward)
 
                     progress.update(1)
 
@@ -70,18 +67,14 @@ class OnPolicy(Experiment):
                             self.results["rewards"][id] = []
                         self.results["rewards"][id].extend(results)
 
-                        min_val, q1, iqm, q3, max_val = self._compute_stats(results)
-                        stats_str = (
-                            f"[{min_val:.1f}|{q1:.1f}|{iqm:.1f}|{q3:.1f}|{max_val:.1f}]"
-                        )
-                        progress.set_postfix({"eval": stats_str})
+                        progress.set_postfix({"eval": self._get_stats(results)})
 
                     if done:
                         break
 
                     if training_steps >= self.params["total_steps"]:
                         break
-                
+
                 if training_steps >= self.params["total_steps"]:
                     break
 
