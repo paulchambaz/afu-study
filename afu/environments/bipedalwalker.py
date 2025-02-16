@@ -3,7 +3,15 @@ from gymnasium.envs.registration import register
 
 
 class BipedalWalkerEnvStudy(BipedalWalker):
-    def set_state(self, hull_angle, hull_angular_velocity, leg1_angle, leg1_speed, leg2_angle, leg2_speed):
+    def set_state(
+        self,
+        hull_angle,
+        hull_angular_velocity,
+        leg1_angle,
+        leg1_speed,
+        leg2_angle,
+        leg2_speed,
+    ):
         self.hull.angle = hull_angle
         self.hull.angularVelocity = hull_angular_velocity
         self.legs[0].angle = leg1_angle

@@ -1,31 +1,41 @@
-import gymnasium as gym # noqa
+import gymnasium as gym  # noqa
 
 from afu.agents.ddpg import DDPG
 from afu.agents.sac import SAC
 from afu.agents.afu import AFU
 
 from afu.agents.afu_perrin import AFUPerrin
+
+from afu.experiments.base import Experiment
 from afu.experiments.off_policy import OffPolicy
 from afu.experiments.on_policy import OnPolicy
 from afu.experiments.test import NewExperiment
 import argparse
 
-
-def get_algorithm(name: str):
-    algorithms = {"ddpg": DDPG, "sac": SAC, "afu": AFU, "afuperrin": AFUPerrin}
-    return algorithms[name.lower()]
+from typing import Type, Any
 
 
-def get_env(name: str):
-    envs = {
-        "cartpole": "CartPoleContinuousStudy-v0",
-    }
-    return envs[name.lower()]
+ALGORITHMS: dict[str, Any] = {
+    "ddpg": DDPG,
+    "sac": SAC,
+    "afu": AFU,
+    "afuperrin": AFUPerrin,
+}
 
 
-def get_experiment(name: str):
-    experiments = {"onpolicy": OnPolicy, "offpolicy": OffPolicy, "test": NewExperiment}
-    return experiments[name.lower()]
+ENVS: dict[str, str] = {
+    "cartpole": "CartPoleContinuousStudy-v0",
+    "pendulum": "PendulumStudy-v0",
+    "lunarlander": "LunarLanderContinuousStudy-v0",
+    "swimmer": "SwimmerStudy-v0",
+    "ant": "AntStudy-v0",
+}
+
+EXPERIMENTS: dict[str, Type[Experiment]] = {
+    "onpolicy": OnPolicy,
+    "offpolicy": OffPolicy,
+    "test": NewExperiment,
+}
 
 
 def main() -> None:
@@ -33,23 +43,23 @@ def main() -> None:
     parser.add_argument(
         "--algo",
         type=str,
-        choices=["ddpg", "sac", "afu", "afuperrin"],
+        choices=ALGORITHMS.keys(),
         required=True,
-        help="Algorithm to train (DDPG, SAC, or AFU)",
+        help="Algorithm to train",
     )
     parser.add_argument(
         "--env",
         type=str,
-        choices=["cartpole"],
+        choices=ENVS.keys(),
         required=True,
-        help="Environment (cartpole)",
+        help="Environment",
     )
     parser.add_argument(
         "--experiment",
         type=str,
-        choices=["onpolicy", "offpolicy", "test"],
+        choices=EXPERIMENTS.keys(),
         required=True,
-        help="Experiment to run (onpolicy, offpolicy)",
+        help="Experiment to run",
     )
     parser.add_argument(
         "--run",
@@ -78,9 +88,9 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    algo = get_algorithm(args.algo)
-    env_name = get_env(args.env)
-    experiment = get_experiment(args.experiment)
+    algo = ALGORITHMS[args.algo]
+    env_name = ENVS[args.env]
+    experiment = EXPERIMENTS[args.experiment]
 
     experiment(
         algo=algo,
