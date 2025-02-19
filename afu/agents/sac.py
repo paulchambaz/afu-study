@@ -82,7 +82,8 @@ class SoftQNetwork(Agent):
         action = self.get(("action", t))
 
         state_action = torch.cat([obs, action], dim=1)
-        q_value = self.model(state_action).squeeze(-1)
+        val = self.model(state_action)
+        q_value = val.squeeze(-1)
 
         self.set((f"{self.prefix}q_value", t), q_value)
 

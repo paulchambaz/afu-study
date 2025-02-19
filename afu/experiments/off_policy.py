@@ -43,22 +43,22 @@ class OffPolicy(Experiment):
             for step in progress:
                 agent.train_env.reset()
 
-                obs_low, obs_high = self.observation_space
+                obs_low, obs_high = agent.train_env.unwrapped.get_observation_space()
                 random_state = np.random.uniform(
                     low=obs_low * obs_scale_factor, high=obs_high * obs_scale_factor
                 )
                 agent.train_env.unwrapped.set_state(*random_state)
+                state = agent.train_env.unwrapped.get_obs()
 
-                act_low, act_high = self.action_space
+                act_low, act_high = agent.train_env.unwrapped.get_action_space()
                 action = np.random.uniform(low=-1.0, high=1.0, size=(1,))
 
                 next_state, reward, terminated, truncated, _ = agent.train_env.step(
                     action
                 )
-
                 done = terminated or truncated
 
-                agent.replay_buffer.push(random_state, action, reward, next_state, done)
+                agent.replay_buffer.push(state, action, reward, next_state, done)
 
                 agent.update()
 

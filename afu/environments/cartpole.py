@@ -14,6 +14,9 @@ class ContinuousCartPoleEnvStudy(ContinuousCartPoleEnv):
             pole_angular_velocity,
         )
 
+    def get_obs(self):
+        return self.state
+
     def get_observation_space(self):
         return (
             np.array([-4.8, -8.0, -0.418, -8.0]),
