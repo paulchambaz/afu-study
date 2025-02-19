@@ -63,7 +63,6 @@ class Experiment(ABC):
 
     def evaluation(self, agent, n=11):
         env = gym.make(self.env_name)
-        env.reset(seed=self.results["metadata"]["seed"])
         results = []
 
         for _ in range(n):
