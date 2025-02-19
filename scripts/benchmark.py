@@ -102,13 +102,6 @@ def main() -> None:
         required=False,
         help="Random seed for reproducibility",
     )
-    parser.add_argument(
-        "--max-processes",
-        type=int,
-        required=False,
-        default=cpu_count(),
-        help="Maximum number of parallel processes",
-    )
 
     args = parser.parse_args()
 
