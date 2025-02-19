@@ -1,5 +1,5 @@
 run *ARGS:
-  python -m scripts.train {{ARGS}}
+  python -m scripts.benchmark --env pendulum --experiment onpolicy --run 5 --steps 200000
 
 evaluate *ARGS:
   python -m scripts.evaluate {{ARGS}}
