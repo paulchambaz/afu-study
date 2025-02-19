@@ -57,7 +57,7 @@ def display_results(results_dict, colors_dict, title, N=4):
 def main():
     algorithms = ["DDPG", "SAC", "AFUPerrin"]
     experiments = ["OffPolicy", "OnPolicy"]
-    env_name = "CartPoleContinuousStudy-v0"
+    env_name = "PendulumStudy-v0"
 
     colors_dict = {
         "DDPG": "#D00000",
