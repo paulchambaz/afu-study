@@ -5,35 +5,11 @@ from tqdm import tqdm  # type: ignore
 
 class OffPolicy(Experiment):
     def run(self):
-        params = {
-            "env_name": self.env_name,
-            "actor_hidden_size": [128, 128],
-            "critic_hidden_size": [128, 128],
-            "noise_std": 0.1,
-            "replay_size": 100_000,
-            "actor_lr": 3e-4,
-            "critic_lr": 3e-4,
-            "tau": 0.01,
-            "gamma": 0.99,
-            "batch_size": 32,
-            "max_episodes": 500,
-            "max_steps": 500,
-            "policy_hidden_size": [128, 128],
-            "q_hidden_size": [128, 128],
-            "policy_lr": 3e-4,
-            "q_lr": 3e-4,
-            "alpha_lr": 3e-4,
-            "hidden_size": [128, 128],
-            "log_std_min": -20.0,
-            "log_std_max": 2.0,
-            "gradient_reduction": 0.8,
-            "learning_rate": 3e-4,
-        }
         obs_scale_factor = 0.5
 
         for i in range(self.params["n"]):
             training_steps = 0
-            agent = self.algo(params)
+            agent = self.algo(env_name=self.env_name)
 
             progress = tqdm(
                 range(self.params["total_steps"]),

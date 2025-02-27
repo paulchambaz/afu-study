@@ -1,4 +1,5 @@
 import torch
+from omegaconf import OmegaConf
 import gymnasium as gym
 import torch.nn as nn
 import numpy as np
@@ -100,14 +101,17 @@ class GaussianNoise:
 class DDPG:
     """Deep Deterministic Policy Gradient implementation for continuous action spaces."""
 
-    def __init__(self, params: dict) -> None:
+    def __init__(self, **kwargs) -> None:
         """Initialize DDPG agent with training parameters."""
-        self.params = params
+        self.params = OmegaConf.merge(
+            DDPG._get_params_defaults(),
+            OmegaConf.create(kwargs),
+        )
 
         # Create training environment and validate its observation/action spaces. We need
         # both spaces to have proper shape attributes since we're dealing with continuous
         # state/ation spaces.
-        self.train_env = gym.make(params["env_name"])
+        self.train_env = gym.make(self.params.env_name)
         if (
             not hasattr(self.train_env.observation_space, "shape")
             or self.train_env.observation_space.shape is None
@@ -128,33 +132,33 @@ class DDPG:
         # Inititialize the core networks, actor (policy) network and its target for
         # stable learning and critic (value network and its target for stable learning.
         # Target networks start as copies of their original networks.
-        self.actor = Actor(state_dim, params["actor_hidden_size"], action_dim)
-        self.target_actor = Actor(state_dim, params["actor_hidden_size"], action_dim)
+        self.actor = Actor(state_dim, self.params.actor_hidden_size, action_dim)
+        self.target_actor = Actor(state_dim, self.params.actor_hidden_size, action_dim)
         self.target_actor.load_state_dict(self.actor.state_dict())
 
         self.critic = Critic(
-            state_dim, params["critic_hidden_size"], action_dim, prefix="critic/"
+            state_dim, self.params.critic_hidden_size, action_dim, prefix="critic/"
         )
         self.target_critic = Critic(
             state_dim,
-            params["critic_hidden_size"],
+            self.params.critic_hidden_size,
             action_dim,
             prefix="target_critic/",
         )
         self.target_critic.load_state_dict(self.critic.state_dict())
 
         # Exploration noise helps explore continuous action space.
-        self.noise = GaussianNoise(action_dim, params["noise_std"])
+        self.noise = GaussianNoise(action_dim, self.params.noise_std)
 
         # Replay buffer stores transitions for stable learning.
-        self.replay_buffer = ReplayBuffer(params["replay_size"])
+        self.replay_buffer = ReplayBuffer(self.params.replay_size)
 
         # Seperate optimizer allow different learning rates for actor and critic
         self.actor_optimizer = torch.optim.Adam(
-            self.actor.parameters(), lr=params["actor_lr"]
+            self.actor.parameters(), lr=self.params.actor_lr
         )
         self.critic_optimizer = torch.optim.Adam(
-            self.critic.parameters(), lr=params["critic_lr"]
+            self.critic.parameters(), lr=self.params.critic_lr
         )
 
         self.total_steps = 0
@@ -368,3 +372,20 @@ class DDPG:
         agent = cls(save_dict["params"])
         agent.load(path)
         return agent
+
+    @classmethod
+    def _get_params_defaults(cls):
+        return OmegaConf.create(
+            {
+                "actor_hidden_size": [128, 128],
+                "critic_hidden_size": [128, 128],
+                "noise_std": 0.1,
+                "replay_size": 100_000,
+                "actor_lr": 3e-4,
+                "critic_lr": 3e-4,
+                "tau": 0.01,
+                "gamma": 0.99,
+                "batch_size": 128,
+                "max_steps": 500,
+            }
+        )
