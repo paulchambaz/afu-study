@@ -1,5 +1,5 @@
 run *ARGS:
-  python -m scripts.evaluate --algo afuperrin --env pendulum --experiment onpolicy --run 5 --steps 200000
+  python -m scripts.evaluate --algo ddpg --env pendulum --experiment onpolicy --run 5 --steps 200000
 
 evaluate *ARGS:
   python -m scripts.evaluate {{ARGS}}

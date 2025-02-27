@@ -1,29 +1,36 @@
 import gymnasium as gym
+import multiprocessing as mp
 from abc import ABC, abstractmethod
 import pickle
 import time
 import random
 import numpy as np
 from pathlib import Path
+from omegaconf import OmegaConf
 
 
 class Experiment(ABC):
-    def __init__(self, algo, env_name, params, seed):
+    def __init__(self, algo, **kwargs):
         self.algo = algo
-        self.env_name = env_name
-        self.params = params
+
+        self.params = OmegaConf.merge(
+            self._get_params_defaults(),
+            OmegaConf.create(kwargs),
+        )
+
+        seed = (
+            self.params.seed if hasattr(self.params, "seed") else self._generate_seed()
+        )
         self.results = {
             "rewards": {},
             "metadata": {
-                "start_time": None,
-                "end_time": None,
                 "total_steps": 0,
-                "seed": seed if seed is not None else self._generate_seed(),
+                "seed": seed,
             },
         }
         self._set_seeds()
 
-        self.env = gym.make(self.env_name)
+        self.env = gym.make(self.params.env_name)
         self.observation_space = self.env.unwrapped.get_observation_space()
         self.action_space = self.env.unwrapped.get_action_space()
 
@@ -62,7 +69,7 @@ class Experiment(ABC):
         return scaled
 
     def evaluation(self, agent, n=11):
-        env = gym.make(self.env_name)
+        env = gym.make(self.params.env_name)
         results = []
 
         for _ in range(n):
@@ -93,7 +100,7 @@ class Experiment(ABC):
         policy_type = self.__class__.__name__
         algo_name = self.algo.__name__
         self.results["metadata"]["end_time"] = time.time()
-        filename = f"results/{policy_type}-{algo_name}-{self.env_name}.pk"
+        filename = f"results/{policy_type}-{algo_name}-{self.params.env_name}.pk"
         with open(filename, "wb") as f:
             pickle.dump(self.results, f)
 
@@ -105,9 +112,37 @@ class Experiment(ABC):
         pass
 
     @abstractmethod
-    def run(self):
-        self.results["metadata"]["start_time"] = time.time()
+    def run(self, id):
         pass
+
+    def run_parallel(self, n_runs=None):
+        if n_runs is None:
+            n_runs = self.params.n
+
+        self.results_lock = mp.Lock()
+
+        processes = []
+        for i in range(n_runs):
+            p = mp.Process(target=self.run, args=(i,))
+            processes.append(p)
+            p.start()
+
+        for p in processes:
+            p.join()
+
+        self.save_results()
 
     def __del__(self):
         self.env.close()
+
+    @classmethod
+    def _get_params_defaults(cls) -> OmegaConf:
+        return OmegaConf.create(
+            {
+                "n": 15,
+                "interval": 100,
+                "total_steps": 50_000,
+                "seed": None,
+                "eval_episodes": 10,
+            }
+        )

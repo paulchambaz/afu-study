@@ -95,13 +95,11 @@ def main() -> None:
     experiment(
         algo=algo,
         env_name=env_name,
-        params={
-            "n": args.run,
-            "interval": args.interval,
-            "total_steps": args.steps,
-        },
+        n=args.run,
+        interval=args.interval,
+        total_steps=args.steps,
         seed=args.seed,
-    ).run()
+    ).run_parallel()
 
 
 if __name__ == "__main__":

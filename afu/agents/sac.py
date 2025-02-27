@@ -1,4 +1,5 @@
 import torch
+from omegaconf import OmegaConf
 import gymnasium as gym
 import torch.nn as nn
 import numpy as np
@@ -91,14 +92,17 @@ class SoftQNetwork(Agent):
 class SAC:
     """Soft Actor-Critic implementation."""
 
-    def __init__(self, params: dict) -> None:
+    def __init__(self, **kwargs) -> None:
         """Initialize networks, optimizers and other components."""
-        self.params = params
+        self.params = OmegaConf.merge(
+            SAC._get_params_defaults(),
+            OmegaConf.create(kwargs),
+        )
 
         # Create training environment and validate its observation/action spaces.
         # We need both spaces to have proper shape attributes since we're dealing
         # with continuous state/action spaces.
-        self.train_env = gym.make(params["env_name"])
+        self.train_env = gym.make(self.params.env_name)
         if (
             not hasattr(self.train_env.observation_space, "shape")
             or self.train_env.observation_space.shape is None
@@ -117,21 +121,21 @@ class SAC:
         self.action_dim = action_dim
 
         self.policy = GaussianPolicy(
-            state_dim, params["policy_hidden_size"], action_dim
+            state_dim, self.params.policy_hidden_size, action_dim
         )
 
         self.q1 = SoftQNetwork(
-            state_dim, params["q_hidden_size"], action_dim, prefix="q1/"
+            state_dim, self.params.q_hidden_size, action_dim, prefix="q1/"
         )
         self.q2 = SoftQNetwork(
-            state_dim, params["q_hidden_size"], action_dim, prefix="q2/"
+            state_dim, self.params.q_hidden_size, action_dim, prefix="q2/"
         )
 
         self.target_q1 = SoftQNetwork(
-            state_dim, params["q_hidden_size"], action_dim, prefix="target_q1/"
+            state_dim, self.params.q_hidden_size, action_dim, prefix="target_q1/"
         )
         self.target_q2 = SoftQNetwork(
-            state_dim, params["q_hidden_size"], action_dim, prefix="target_q2/"
+            state_dim, self.params.q_hidden_size, action_dim, prefix="target_q2/"
         )
 
         self.target_q1.load_state_dict(self.q1.state_dict())
@@ -139,14 +143,16 @@ class SAC:
 
         self.log_alpha = torch.zeros(1, requires_grad=True)
 
-        self.replay_buffer = ReplayBuffer(params["replay_size"])
+        self.replay_buffer = ReplayBuffer(self.params.replay_size)
 
         self.policy_optimizer = torch.optim.Adam(
-            self.policy.parameters(), lr=params["policy_lr"]
+            self.policy.parameters(), lr=self.params.policy_lr
         )
-        self.q1_optimizer = torch.optim.Adam(self.q1.parameters(), lr=params["q_lr"])
-        self.q2_optimizer = torch.optim.Adam(self.q2.parameters(), lr=params["q_lr"])
-        self.alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=params["alpha_lr"])
+        self.q1_optimizer = torch.optim.Adam(self.q1.parameters(), lr=self.params.q_lr)
+        self.q2_optimizer = torch.optim.Adam(self.q2.parameters(), lr=self.params.q_lr)
+        self.alpha_optimizer = torch.optim.Adam(
+            [self.log_alpha], lr=self.params.alpha_lr
+        )
 
         self.total_steps = 0
 
@@ -264,7 +270,8 @@ class SAC:
         """Update temperature parameter to maintain target entropy."""
         target_entropy = -self.action_dim
 
-        alpha = self.log_alpha.exp()
+        # TODO: understadn why we never use this alpha
+        # alpha = self.log_alpha.exp()
         alpha_loss = -(self.log_alpha * (log_probs + target_entropy).detach()).mean()
 
         self.alpha_optimizer.zero_grad()
@@ -390,3 +397,22 @@ class SAC:
         agent = cls(save_dict["params"])
         agent.load(path)
         return agent
+
+    @classmethod
+    def _get_params_defaults(cls):
+        return OmegaConf.create(
+            {
+                "policy_hidden_size": [128, 128],
+                "q_hidden_size": [128, 128],
+                "policy_lr": 3e-4,
+                "q_lr": 3e-4,
+                "alpha_lr": 3e-4,
+                "gamma": 0.99,
+                "tau": 0.01,
+                "batch_size": 128,
+                "replay_size": 100_000,
+                "max_steps": 500,
+                "log_std_min": -20.0,
+                "log_std_max": 2.0,
+            }
+        )
