@@ -23,7 +23,7 @@ class AFUPerrin:
             units_actor=(self.params.hidden_size, self.params.hidden_size),
             units_critic=(self.params.hidden_size, self.params.hidden_size),
             gradient_reduction=self.params.gradient_reduction,
-            buffer_size=self.params.buffer_size,
+            buffer_size=self.params.replay_size,
             variant="alpha",
             alg="AFU",
         )
@@ -38,7 +38,7 @@ class AFUPerrin:
             return self.algo.explore(state)
 
     def update(self):
-       if len(self.replay_buffer) > 0:
+        if len(self.replay_buffer) > 0:
             (
                 state,
                 action,
