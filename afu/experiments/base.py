@@ -1,4 +1,5 @@
 import gymnasium as gym
+import optuna
 import multiprocessing as mp
 from abc import ABC, abstractmethod
 import pickle
@@ -18,11 +19,16 @@ class Experiment(ABC):
             OmegaConf.create(kwargs),
         )
 
+        self.hyperparameters = algo._get_params_defaults()
+        self.hyperparameters["env_name"] = self.params.env_name
+
         seed = (
             self.params.seed if hasattr(self.params, "seed") else self._generate_seed()
         )
         self.results = {
             "rewards": {},
+            "params": self.params,
+            "hyperparameter": self.hyperparameters,
             "metadata": {
                 "total_steps": 0,
                 "seed": seed,
@@ -33,6 +39,15 @@ class Experiment(ABC):
         self.env = gym.make(self.params.env_name)
         self.observation_space = self.env.unwrapped.get_observation_space()
         self.action_space = self.env.unwrapped.get_action_space()
+
+    def get_score(self) -> float:
+        rewards = sorted(self.results["rewards"].keys())
+        points = rewards[int(0.9 * len(rewards)) :]
+        results = []
+        for point in points:
+            results.extend(self.results["rewards"][point])
+        min_val, q1, iqm, q3, max_val = self._compute_stats(results)
+        return (q1 + iqm + q3) / 3
 
     def _compute_stats(self, data):
         data = np.array(data)
@@ -119,21 +134,79 @@ class Experiment(ABC):
         if n_runs is None:
             n_runs = self.params.n
 
-        self.results_lock = mp.Lock()
+        manager = mp.Manager()
+        shared_results = manager.dict()
+        for key, value in self.results.items():
+            shared_results[key] = value.copy()
+        shared_results["rewards"] = manager.dict()
+
+        results_lock = mp.Lock()
 
         processes = []
         for i in range(n_runs):
-            p = mp.Process(target=self.run, args=(i,))
+            p = mp.Process(target=self.run, args=(i, shared_results, results_lock))
             processes.append(p)
             p.start()
 
         for p in processes:
             p.join()
 
-        self.save_results()
+        self.results = dict(shared_results)
+        self.results["rewards"] = dict(shared_results["rewards"])
 
-    def __del__(self):
-        self.env.close()
+    def tuned_run(self, n_trials=50, n_parallel_trials=5, n_runs=3):
+        print(f"Starting hyperparameter tuning with {n_trials} trials")
+
+        def objective(trial):
+            params = {}
+            params["env_name"] = self.params.env_name
+            for name, (
+                param_type,
+                min_val,
+                max_val,
+                log_scale,
+            ) in self.algo._get_hp_space().items():
+                if param_type == "float":
+                    params[name] = trial.suggest_float(
+                        name, min_val, max_val, log=log_scale
+                    )
+                elif param_type == "int":
+                    params[name] = trial.suggest_int(
+                        name, min_val, max_val, log=log_scale
+                    )
+                else:
+                    print("Wrong param type for trial")
+                    exit(1)
+
+            experiment = self.__class__(
+                algo=self.algo,
+                env_name=self.params.env_name,
+                n=3,
+                interval=self.params.interval,
+                total_steps=self.params.total_steps,
+            )
+            experiment.hyperparameter = OmegaConf.create(params)
+            experiment.run_parallel(n_runs)
+            return experiment.get_score()
+
+        sampler = optuna.samplers.TPESampler(multivariate=True, n_startup_trials=10)
+        study = optuna.create_study(direction="maximize", sampler=sampler)
+
+        optuna.logging.set_verbosity(optuna.logging.WARNING)
+        study.optimize(objective, n_trials=n_trials, n_jobs=n_parallel_trials)
+
+        print(f"Found the best parameters after {n_trials} trials")
+        best_params = study.best_params
+        print(best_params)
+
+        best_params["env_name"] = self.params.env_name
+
+        self.hyperparameters = OmegaConf.create(best_params)
+        self.hyperparameters["env_name"] = self.params.env_name
+        self.results["hyperparameter"] = self.hyperparameters
+
+        self.run_parallel()
+        self.save_results()
 
     @classmethod
     def _get_params_defaults(cls) -> OmegaConf:
@@ -143,6 +216,8 @@ class Experiment(ABC):
                 "interval": 100,
                 "total_steps": 50_000,
                 "seed": None,
-                "eval_episodes": 10,
             }
         )
+
+    def __del__(self):
+        self.env.close()
