@@ -7,11 +7,8 @@ from .memory import ReplayBuffer
 
 
 class AFUPerrin:
-    def __init__(self, **kwargs) -> None:
-        self.params = OmegaConf.merge(
-            AFUPerrin._get_params_defaults(),
-            OmegaConf.create(kwargs),
-        )
+    def __init__(self, hyperparameters: OmegaConf) -> None:
+        self.params = hyperparameters
 
         self.train_env = gym.make(self.params.env_name)
         self.algo = AFU(
@@ -23,8 +20,8 @@ class AFUPerrin:
             lr_actor=self.params.learning_rate,
             lr_critic=self.params.learning_rate,
             lr_alpha=self.params.learning_rate,
-            units_actor=(self.params.hidden_size[0], self.params.hidden_size[1]),
-            units_critic=(self.params.hidden_size[0], self.params.hidden_size[1]),
+            units_actor=(self.params.hidden_size, self.params.hidden_size),
+            units_critic=(self.params.hidden_size, self.params.hidden_size),
             gradient_reduction=self.params.gradient_reduction,
             variant="alpha",
             alg="AFU",
@@ -63,7 +60,7 @@ class AFUPerrin:
     def _get_params_defaults(cls) -> OmegaConf:
         return OmegaConf.create(
             {
-                "hidden_size": [128, 128],
+                "hidden_size": 128,
                 "gradient_reduction": 0.8,
                 "learning_rate": 3e-4,
                 "tau": 0.01,
@@ -71,3 +68,14 @@ class AFUPerrin:
                 "batch_size": 128,
             }
         )
+
+    @classmethod
+    def _get_hp_space(cls):
+        return {
+            "hidden_size": ("int", 32, 256, True),
+            "gradient_reduction": ("float", 0.0, 1.0, False),
+            "learning_rate": ("float", 1e-5, 1e-2, True),
+            "tau": ("float", 0, 1, False),
+            "replay_size": ("int", 10_000, 1_000_000, True),
+            "batch_size": ("int", 32, 512, True),
+        }

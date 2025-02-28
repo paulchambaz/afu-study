@@ -3,9 +3,9 @@ from tqdm import tqdm  # type: ignore
 
 
 class OnPolicy(Experiment):
-    def run(self, i):
+    def run(self, i, shared_results, results_lock):
         training_steps = 0
-        agent = self.algo(env_name=self.params.env_name)
+        agent = self.algo(self.hyperparameters)
 
         progress = tqdm(
             range(self.params.total_steps),
@@ -30,19 +30,20 @@ class OnPolicy(Experiment):
                 agent.total_steps += 1
                 training_steps += 1
 
-                with self.results_lock:
-                    self.results["metadata"]["total_steps"] += 1
-
                 progress.update(1)
 
                 if training_steps % self.params.interval == 0:
                     eval_results = self.evaluation(agent)
                     id = training_steps // self.params.interval
 
-                    with self.results_lock:
-                        if id not in self.results["rewards"]:
-                            self.results["rewards"][id] = []
-                        self.results["rewards"][id].extend(eval_results)
+                    with results_lock:
+                        if id not in shared_results["rewards"]:
+                            shared_results["rewards"][id] = eval_results
+                        else:
+                            current_results = shared_results["rewards"][id]
+                            shared_results["rewards"][id] = (
+                                current_results + eval_results
+                            )
 
                     progress.set_postfix({"eval": self._get_stats(eval_results)})
 

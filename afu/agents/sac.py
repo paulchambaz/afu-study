@@ -92,12 +92,9 @@ class SoftQNetwork(Agent):
 class SAC:
     """Soft Actor-Critic implementation."""
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, hyperparameters: OmegaConf) -> None:
         """Initialize networks, optimizers and other components."""
-        self.params = OmegaConf.merge(
-            SAC._get_params_defaults(),
-            OmegaConf.create(kwargs),
-        )
+        self.params = hyperparameters
 
         # Create training environment and validate its observation/action spaces.
         # We need both spaces to have proper shape attributes since we're dealing
@@ -121,21 +118,35 @@ class SAC:
         self.action_dim = action_dim
 
         self.policy = GaussianPolicy(
-            state_dim, self.params.policy_hidden_size, action_dim
+            state_dim,
+            [self.params.policy_hidden_size, self.params.policy_hidden_size],
+            action_dim,
         )
 
         self.q1 = SoftQNetwork(
-            state_dim, self.params.q_hidden_size, action_dim, prefix="q1/"
+            state_dim,
+            [self.params.q_hidden_size, self.params.q_hidden_size],
+            action_dim,
+            prefix="q1/",
         )
         self.q2 = SoftQNetwork(
-            state_dim, self.params.q_hidden_size, action_dim, prefix="q2/"
+            state_dim,
+            [self.params.q_hidden_size, self.params.q_hidden_size],
+            action_dim,
+            prefix="q2/",
         )
 
         self.target_q1 = SoftQNetwork(
-            state_dim, self.params.q_hidden_size, action_dim, prefix="target_q1/"
+            state_dim,
+            [self.params.q_hidden_size, self.params.q_hidden_size],
+            action_dim,
+            prefix="target_q1/",
         )
         self.target_q2 = SoftQNetwork(
-            state_dim, self.params.q_hidden_size, action_dim, prefix="target_q2/"
+            state_dim,
+            [self.params.q_hidden_size, self.params.q_hidden_size],
+            action_dim,
+            prefix="target_q2/",
         )
 
         self.target_q1.load_state_dict(self.q1.state_dict())
@@ -402,8 +413,8 @@ class SAC:
     def _get_params_defaults(cls):
         return OmegaConf.create(
             {
-                "policy_hidden_size": [128, 128],
-                "q_hidden_size": [128, 128],
+                "policy_hidden_size": 128,
+                "q_hidden_size": 128,
                 "policy_lr": 3e-4,
                 "q_lr": 3e-4,
                 "alpha_lr": 3e-4,
@@ -416,3 +427,20 @@ class SAC:
                 "log_std_max": 2.0,
             }
         )
+
+    @classmethod
+    def _get_hp_space(cls):
+        return {
+            "policy_hidden_size": ("int", 32, 256, True),
+            "q_hidden_size": ("int", 32, 256, True),
+            "policy_lr": ("float", 1e-5, 1e-2, True),
+            "q_lr": ("float", 1e-5, 1e-2, True),
+            "alpha_lr": ("float", 1e-5, 1e-2, True),
+            "gamma": ("float", 0.9, 0.9999, False),
+            "tau": ("float", 0.001, 0.1, True),
+            "batch_size": ("int", 32, 512, True),
+            "replay_size": ("int", 10_000, 1_000_000, True),
+            "max_steps": ("int", 100, 1000, False),
+            "log_std_min": ("float", -50.0, -0.0, False),
+            "log_std_max": ("float", -0.0, 20.0, False),
+        }

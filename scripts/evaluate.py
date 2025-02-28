@@ -83,6 +83,13 @@ def main() -> None:
         help="Max number of steps for the experiment",
     )
     parser.add_argument(
+        "--trials",
+        type=int,
+        required=False,
+        default=80,
+        help="Number of trials for optuna",
+    )
+    parser.add_argument(
         "--seed", type=int, required=False, help="Random seed for reproducibility"
     )
 
@@ -90,16 +97,22 @@ def main() -> None:
 
     algo = ALGORITHMS[args.algo]
     env_name = ENVS[args.env]
-    experiment = EXPERIMENTS[args.experiment]
+    Experiment = EXPERIMENTS[args.experiment]
 
-    experiment(
+    experiment = Experiment(
         algo=algo,
         env_name=env_name,
         n=args.run,
         interval=args.interval,
         total_steps=args.steps,
         seed=args.seed,
-    ).run_parallel()
+    )
+
+    experiment.tuned_run(
+        n_trials=args.trials,
+        n_parallel_trials=5,
+        n_runs=3,
+    )
 
 
 if __name__ == "__main__":

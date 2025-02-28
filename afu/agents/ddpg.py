@@ -101,12 +101,9 @@ class GaussianNoise:
 class DDPG:
     """Deep Deterministic Policy Gradient implementation for continuous action spaces."""
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, hyperparameters: OmegaConf) -> None:
         """Initialize DDPG agent with training parameters."""
-        self.params = OmegaConf.merge(
-            DDPG._get_params_defaults(),
-            OmegaConf.create(kwargs),
-        )
+        self.params = hyperparameters
 
         # Create training environment and validate its observation/action spaces. We need
         # both spaces to have proper shape attributes since we're dealing with continuous
@@ -132,16 +129,28 @@ class DDPG:
         # Inititialize the core networks, actor (policy) network and its target for
         # stable learning and critic (value network and its target for stable learning.
         # Target networks start as copies of their original networks.
-        self.actor = Actor(state_dim, self.params.actor_hidden_size, action_dim)
-        self.target_actor = Actor(state_dim, self.params.actor_hidden_size, action_dim)
+
+        self.actor = Actor(
+            state_dim,
+            [self.params.actor_hidden_size, self.params.actor_hidden_size],
+            action_dim,
+        )
+        self.target_actor = Actor(
+            state_dim,
+            [self.params.actor_hidden_size, self.params.actor_hidden_size],
+            action_dim,
+        )
         self.target_actor.load_state_dict(self.actor.state_dict())
 
         self.critic = Critic(
-            state_dim, self.params.critic_hidden_size, action_dim, prefix="critic/"
+            state_dim,
+            [self.params.critic_hidden_size, self.params.critic_hidden_size],
+            action_dim,
+            prefix="critic/",
         )
         self.target_critic = Critic(
             state_dim,
-            self.params.critic_hidden_size,
+            [self.params.critic_hidden_size, self.params.critic_hidden_size],
             action_dim,
             prefix="target_critic/",
         )
@@ -377,8 +386,8 @@ class DDPG:
     def _get_params_defaults(cls):
         return OmegaConf.create(
             {
-                "actor_hidden_size": [128, 128],
-                "critic_hidden_size": [128, 128],
+                "actor_hidden_size": 128,
+                "critic_hidden_size": 128,
                 "noise_std": 0.1,
                 "replay_size": 100_000,
                 "actor_lr": 3e-4,
@@ -389,3 +398,18 @@ class DDPG:
                 "max_steps": 500,
             }
         )
+
+    @classmethod
+    def _get_hp_space(cls):
+        return {
+            "actor_hidden_size": ("int", 32, 256, True),
+            "critic_hidden_size": ("int", 32, 256, True),
+            "noise_std": ("float", 0.01, 0.5, True),
+            "replay_size": ("int", 10000, 500000, True),
+            "actor_lr": ("float", 1e-5, 1e-2, True),
+            "critic_lr": ("float", 1e-5, 1e-2, True),
+            "tau": ("float", 0.001, 0.1, True),
+            "gamma": ("float", 0.9, 0.9999, False),
+            "batch_size": ("int", 32, 512, True),
+            "max_steps": ("int", 100, 1000, False),
+        }

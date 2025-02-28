@@ -294,6 +294,7 @@
           scikit-image
           pyqt6
           jax
+          optuna
           qtpy
           gymnasium
           pybox2d
