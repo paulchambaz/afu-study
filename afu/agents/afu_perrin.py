@@ -38,6 +38,7 @@ class AFUPerrin:
             return self.algo.explore(state)
 
     def update(self):
+        self.total_steps += 1
         if len(self.replay_buffer) > 0:
             (
                 state,
@@ -55,8 +56,8 @@ class AFUPerrin:
                 next_state=next_state,
             )
 
-        if len(self.replay_buffer) % self.params["batch_size"] == 0:
-            self.algo.update()
+            if self.total_steps % self.params["batch_size"] == 0:
+                self.algo.update()
 
     @classmethod
     def _get_params_defaults(cls) -> OmegaConf:
