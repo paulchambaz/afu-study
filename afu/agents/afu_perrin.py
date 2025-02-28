@@ -75,9 +75,9 @@ class AFUPerrin:
     def _get_hp_space(cls):
         return {
             "hidden_size": ("int", 32, 256, True),
-            "gradient_reduction": ("float", 0.0, 1.0, False),
+            "gradient_reduction": ("float", 0.5, 1.0, False),
             "learning_rate": ("float", 1e-5, 1e-2, True),
-            "tau": ("float", 0, 1, False),
+            "tau": ("float", 1e-4, 1e-1, True),
             "replay_size": ("int", 10_000, 1_000_000, True),
             "batch_size": ("int", 32, 512, True),
         }
