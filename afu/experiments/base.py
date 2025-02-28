@@ -155,55 +155,55 @@ class Experiment(ABC):
         self.results["rewards"] = dict(shared_results["rewards"])
 
     def tuned_run(self, n_trials=50, n_parallel_trials=5, n_runs=3):
-        print(f"Starting hyperparameter tuning with {n_trials} trials")
+        if n_trials > 0:
 
-        def objective(trial):
-            params = {}
-            params["env_name"] = self.params.env_name
-            for name, (
-                param_type,
-                min_val,
-                max_val,
-                log_scale,
-            ) in self.algo._get_hp_space().items():
-                if param_type == "float":
-                    params[name] = trial.suggest_float(
-                        name, min_val, max_val, log=log_scale
-                    )
-                elif param_type == "int":
-                    params[name] = trial.suggest_int(
-                        name, min_val, max_val, log=log_scale
-                    )
-                else:
-                    print("Wrong param type for trial")
-                    exit(1)
+            def objective(trial):
+                params = {}
+                params["env_name"] = self.params.env_name
+                for name, (
+                    param_type,
+                    min_val,
+                    max_val,
+                    log_scale,
+                ) in self.algo._get_hp_space().items():
+                    if param_type == "float":
+                        params[name] = trial.suggest_float(
+                            name, min_val, max_val, log=log_scale
+                        )
+                    elif param_type == "int":
+                        params[name] = trial.suggest_int(
+                            name, min_val, max_val, log=log_scale
+                        )
+                    else:
+                        print("Wrong param type for trial")
+                        exit(1)
 
-            experiment = self.__class__(
-                algo=self.algo,
-                env_name=self.params.env_name,
-                n=3,
-                interval=self.params.interval,
-                total_steps=self.params.total_steps,
-            )
-            experiment.hyperparameter = OmegaConf.create(params)
-            experiment.run_parallel(n_runs)
-            return experiment.get_score()
+                experiment = self.__class__(
+                    algo=self.algo,
+                    env_name=self.params.env_name,
+                    n=3,
+                    interval=self.params.interval,
+                    total_steps=self.params.total_steps,
+                )
+                experiment.hyperparameter = OmegaConf.create(params)
+                experiment.run_parallel(n_runs)
+                return experiment.get_score()
 
-        sampler = optuna.samplers.TPESampler(multivariate=True, n_startup_trials=10)
-        study = optuna.create_study(direction="maximize", sampler=sampler)
+            sampler = optuna.samplers.TPESampler(multivariate=True, n_startup_trials=10)
+            study = optuna.create_study(direction="maximize", sampler=sampler)
 
-        optuna.logging.set_verbosity(optuna.logging.WARNING)
-        study.optimize(objective, n_trials=n_trials, n_jobs=n_parallel_trials)
+            optuna.logging.set_verbosity(optuna.logging.WARNING)
+            study.optimize(objective, n_trials=n_trials, n_jobs=n_parallel_trials)
 
-        print(f"Found the best parameters after {n_trials} trials")
-        best_params = study.best_params
-        print(best_params)
+            print(f"Found the best parameters after {n_trials} trials")
+            best_params = study.best_params
+            print(best_params)
 
-        best_params["env_name"] = self.params.env_name
+            best_params["env_name"] = self.params.env_name
 
-        self.hyperparameters = OmegaConf.create(best_params)
-        self.hyperparameters["env_name"] = self.params.env_name
-        self.results["hyperparameter"] = self.hyperparameters
+            self.hyperparameters = OmegaConf.create(best_params)
+            self.hyperparameters["env_name"] = self.params.env_name
+            self.results["hyperparameter"] = self.hyperparameters
 
         self.run_parallel()
         self.save_results()

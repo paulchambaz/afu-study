@@ -54,6 +54,30 @@ def display_results(results_dict, colors_dict, title, N=4):
     plt.show()
 
 
+def plot_histograms(experiment_results, colors_dict, experiment, env_name):
+    for algo, results in experiment_results.items():
+        rewards_data = results["rewards"]
+
+        all_timesteps = sorted(list(rewards_data.keys()))
+
+        last_timesteps = all_timesteps[-int(len(all_timesteps) * 0.3) :]
+
+        all_rewards = []
+        for timestep in last_timesteps:
+            all_rewards.extend(rewards_data[timestep])
+
+        plt.figure(figsize=(10, 6))
+        plt.hist(all_rewards, bins=50, color=colors_dict[algo], alpha=0.7)
+        plt.title(f"{algo} Reward Distribution - Last 30% of {experiment} Training")
+        plt.xlabel("Return")
+        plt.ylabel("Frequency")
+        plt.grid(True, alpha=0.3)
+        plt.show()
+
+
+# {'hidden_size': 45, 'gradient_reduction': 0.8307174224936501, 'learning_rate': 0.00043726536490416824, 'tau': 0.39425219584296994, 'replay_size': 308891, 'batch_size': 211, 'env_name': 'PendulumStudy-v0'}
+
+
 def main():
     algorithms = ["DDPG", "SAC", "AFUPerrin"]
     experiments = ["OffPolicy", "OnPolicy"]
@@ -65,7 +89,6 @@ def main():
         "AFUPerrin": "#023E8A",
     }
 
-    # Create a figure for each experiment type
     for experiment in experiments:
         experiment_results = {}
         for algo in algorithms:
@@ -77,13 +100,18 @@ def main():
                 print(f"Warning: File {filename} not found")
                 continue
 
-        if experiment_results:  # Only create plot if we have data
+        if experiment_results:
+            if experiment == "OnPolicy":
+                print(experiment_results["AFUPerrin"]["hyperparameter"])
+
             display_results(
                 experiment_results,
                 colors_dict,
                 f"{experiment} Training Progress",
                 N=4 if experiment == "OnPolicy" else 1,
             )
+
+            plot_histograms(experiment_results, colors_dict, experiment, env_name)
 
 
 if __name__ == "__main__":
