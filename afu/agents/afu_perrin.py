@@ -23,6 +23,7 @@ class AFUPerrin:
             units_actor=(self.params.hidden_size, self.params.hidden_size),
             units_critic=(self.params.hidden_size, self.params.hidden_size),
             gradient_reduction=self.params.gradient_reduction,
+            buffer_size=self.params.buffer_size,
             variant="alpha",
             alg="AFU",
         )
@@ -37,7 +38,7 @@ class AFUPerrin:
             return self.algo.explore(state)
 
     def update(self):
-        if len(self.replay_buffer) >= self.params["batch_size"]:
+       if len(self.replay_buffer) > 0:
             (
                 state,
                 action,
@@ -54,6 +55,7 @@ class AFUPerrin:
                 next_state=next_state,
             )
 
+        if len(self.replay_buffer) % self.params["batch_size"] == 0:
             self.algo.update()
 
     @classmethod
