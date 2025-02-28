@@ -187,7 +187,9 @@ class Experiment(ABC):
                 )
                 experiment.hyperparameter = OmegaConf.create(params)
                 experiment.run_parallel(n_runs)
-                return experiment.get_score()
+                score = experiment.get_score()
+                print(f"Score: {score}")
+                return score
 
             sampler = optuna.samplers.TPESampler(multivariate=True, n_startup_trials=10)
             study = optuna.create_study(direction="maximize", sampler=sampler)
