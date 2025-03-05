@@ -3,7 +3,8 @@ import numpy as np
 from afu.agents.dqn import DQN
 from afu.agents.ddpg import DDPG
 from afu.agents.sac import SAC
-from afu.agents.afu import AFU
+from afu.agents.afu_f import AFU
+from afu.agents.afu_perrin import AFUPerrin
 from bbrl.workspace import Workspace  # type: ignore
 from tqdm import tqdm  # type: ignore
 
@@ -269,9 +270,9 @@ def train_demo(algo, env_name) -> None:
 
 
 def main() -> None:
-    train_demo_v2(DQNAgent, "CartPole-v1")
+    # train_demo_v2(DQNAgent, "CartPole-v1")
     # train_demo(DQN, "CartPole-v1")
-    # train_demo(SAC, "CartPoleContinuousStudy-v0")
+    train_demo(AFUPerrin, env_name="BipedalWalkerStudy-v0")
     # test_afu_cartpole()
 
 
