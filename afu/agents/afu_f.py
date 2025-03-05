@@ -254,11 +254,8 @@ class AFU:
         return action.detach().numpy()[0]
 
     def _compute_critic_loss(self, workspace: Workspace) -> torch.Tensor:
-        """Compute loss for Q-functions (critic) using AFU's method with BBRL.
-
-        * workspace: BBRL Workspace containing state-action pairs and targets
-        -> critic loss
-        """
+        """Compute loss for Q-functions (critic) using AFU's method with BBRL."""
+        
         states = workspace.get("env/env_obs", 0)
         actions = workspace.get("action", 0)
         targets = workspace.get("target_q", 0)
@@ -266,8 +263,20 @@ class AFU:
         q1_values = self.q1.model(torch.cat([states, actions], dim=1)).squeeze(-1)
         q2_values = self.q2.model(torch.cat([states, actions], dim=1)).squeeze(-1)
 
-        loss_q1 = ((q1_values - targets) ** 2).mean()
-        loss_q2 = ((q2_values - targets) ** 2).mean()
+        # Compute the advantage function A(s, a)
+        v1_values = self.v1.model(states).squeeze(-1)
+        v2_values = self.v2.model(states).squeeze(-1)
+        min_v = torch.min(v1_values, v2_values)
+
+        adv1 = q1_values - min_v
+        adv2 = q2_values - min_v
+
+        # Apply the transformation Z(x, y)
+        def Z(x, y):
+            return torch.where(x >= 0, (x + y) ** 2, x**2 + y**2)
+
+        loss_q1 = Z(adv1, targets - q1_values).mean()
+        loss_q2 = Z(adv2, targets - q2_values).mean()
 
         return loss_q1 + loss_q2
 

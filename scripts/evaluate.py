@@ -29,6 +29,7 @@ ENVS: dict[str, str] = {
     "lunarlander": "LunarLanderContinuousStudy-v0",
     "swimmer": "SwimmerStudy-v0",
     "ant": "AntStudy-v0",
+    "bipedalwalker": "BipedalWalkerStudy-v0",
 }
 
 EXPERIMENTS: dict[str, Type[Experiment]] = {
