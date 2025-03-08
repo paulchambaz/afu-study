@@ -76,6 +76,6 @@ class LunarLanderContinuousStudy(LunarLander):
 
 register(
     id="LunarLanderContinuousStudy-v0",
-    entry_point="afu.environments.lunar_lander:LunarLanderContinuousStudy",
+    entry_point="afu.environments.lunarlander:LunarLanderContinuousStudy",
     max_episode_steps=1000,
 )
