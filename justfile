@@ -16,6 +16,9 @@ demo:
 test:
   pytest
 
+quicktest:
+  python -m scripts.evaluate --algo afuperrin --env lunarlander --experiment onpolicy --run 1 --steps 10 --trials 2
+
 fmt:
   ruff format
 
