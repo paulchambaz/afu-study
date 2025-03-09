@@ -4,20 +4,20 @@ from tqdm import tqdm  # type: ignore
 
 
 class OffPolicy(Experiment):
-    def run(self):
+    def run(self, j, shared_results, results_lock):
         obs_scale_factor = 0.5
 
         for i in range(self.params["n"]):
             training_steps = 0
-            agent = self.algo(env_name=self.env_name)
+            agent = self.algo(self.hyperparameters)
 
-            progress = tqdm(
-                range(self.params["total_steps"]),
-                desc=f"Training {i}/{self.params['n']}",
-            )
+            # progress = tqdm(
+            #     range(self.params["total_steps"]),
+            #     desc=f"Training {i}/{self.params['n']}",
+            # )
 
-            for step in progress:
-                agent.train_env.reset()
+            while training_steps < self.params["total_steps"]:
+                state, _ = agent.train_env.reset()
 
                 obs_low, obs_high = agent.train_env.unwrapped.get_observation_space()
                 random_state = np.random.uniform(
@@ -41,16 +41,24 @@ class OffPolicy(Experiment):
                 agent.total_steps += 1
                 training_steps += 1
 
-                self.results["metadata"]["total_steps"] += 1
+                with results_lock:
+                    self.results["metadata"]["total_steps"] += 1
 
                 if training_steps % self.params["interval"] == 0:
                     results = self.evaluation(agent)
 
                     id = training_steps // self.params["interval"]
-                    if id not in self.results["rewards"]:
-                        self.results["rewards"][id] = []
-                    self.results["rewards"][id].extend(results)
+                    with results_lock:
+                        if id not in shared_results["rewards"]:
+                            shared_results["rewards"][id] = results
+                        else:
+                            current_results = shared_results["rewards"][id]
+                            shared_results["rewards"][id] = current_results + results
 
-                    progress.set_postfix({"eval": self._get_stats(results)})
+                    # progress.set_postfix({"eval": self._get_stats(results)})
+
+                if training_steps >= self.params["total_steps"]:
+                    break
 
         self.save_results()
+        return self.results
