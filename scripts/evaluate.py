@@ -9,6 +9,7 @@ from afu.agents.afu_perrin import AFUPerrin
 from afu.experiments.base import Experiment
 from afu.experiments.off_policy import OffPolicy
 from afu.experiments.on_policy import OnPolicy
+from afu.experiments.off_to_on import OffToOnPolicy
 from afu.experiments.test import NewExperiment
 import argparse
 
@@ -36,6 +37,7 @@ EXPERIMENTS: dict[str, Type[Experiment]] = {
     "onpolicy": OnPolicy,
     "offpolicy": OffPolicy,
     "test": NewExperiment,
+    "offtoon": OffToOnPolicy,
 }
 
 
