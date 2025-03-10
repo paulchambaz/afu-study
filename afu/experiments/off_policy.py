@@ -61,4 +61,3 @@ class OffPolicy(Experiment):
                     break
 
         self.save_results()
-        return self.results
