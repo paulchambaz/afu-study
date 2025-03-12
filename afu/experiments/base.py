@@ -117,11 +117,9 @@ class Experiment(ABC):
         algo_name = self.algo.__name__
         self.results["metadata"]["end_time"] = time.time()
         filename = f"results/{policy_type}-{algo_name}-{self.params.env_name}.pk"
-        
+
         with open(filename, "wb") as f:
             pickle.dump({"results": self.results}, f)
-        
-        self.algo.save(self, filename.replace(".pk", ".pt"))
 
     def send_to_influxdb(self, metrics) -> None:
         """
