@@ -39,7 +39,6 @@ class AFUPerrin:
             return self.algo.explore(state)
 
     def update(self):
-        self.total_steps += 1
         if len(self.replay_buffer) > 0:
             (
                 state,
@@ -83,7 +82,7 @@ class AFUPerrin:
             "replay_size": ("int", 10_000, 1_000_000, True),
             "batch_size": ("int", 32, 512, True),
         }
-    
+
     def save(self, path: str) -> None:
         """Save model parameters and training state."""
         save_dict = {
