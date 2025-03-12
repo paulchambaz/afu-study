@@ -57,7 +57,8 @@ class AFUPerrin:
             )
 
             if self.total_steps % self.params["batch_size"] == 0:
-                self.algo.update()
+                for _ in self.params["batch_size"]:
+                    self.algo.update()
 
     @classmethod
     def _get_params_defaults(cls) -> OmegaConf:
