@@ -223,6 +223,30 @@
           doCheck = false;
         };
 
+        d4rl = pythonPackages.buildPythonPackage {
+          pname = "d4rl";
+          version = "1.1";
+          format = "setuptools";
+
+          src = pkgs.fetchFromGitHub {
+            owner = "Farama-Foundation";
+            repo = "d4rl";
+            rev = "master";
+            sha256 = "sha256-T2SUevL/omsKVrZq1TabAbKZkFd5O5feMoWtUgWIVwI=";
+          };
+
+          propagatedBuildInputs = with pythonPackages; [
+            gymnasium
+            numpy
+            pkgs.mujoco
+            h5py
+            termcolor
+            click
+          ];
+
+          doCheck = false;
+        };
+
         myPythonPackages = with pythonPackages; [
           pytest
           black
@@ -263,6 +287,7 @@
           mazemdp
           ipyreact
           afu-rljax
+          d4rl
         ];
 
         devPackages = with pkgs; [
