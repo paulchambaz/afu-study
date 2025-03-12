@@ -4,7 +4,6 @@ import numpy as np
 import gymnasium as gym
 import random
 from .memory import ReplayBuffer
-import torch
 
 
 class AFUPerrin:
@@ -57,7 +56,7 @@ class AFUPerrin:
             )
 
             if self.total_steps % self.params["batch_size"] == 0:
-                for _ in self.params["batch_size"]:
+                for _ in range(self.params["batch_size"]):
                     self.algo.update()
 
     @classmethod
@@ -85,12 +84,4 @@ class AFUPerrin:
         }
 
     def save(self, path: str) -> None:
-        """Save model parameters and training state."""
-        save_dict = {
-            "algo_state": self.algo.state_dict(),
-            "replay_buffer": self.replay_buffer,
-            "params": self.params,
-            "total_steps": self.total_steps,
-            "episode_reward": self.episode_reward,
-        }
-        torch.save(save_dict, path)
+        pass
