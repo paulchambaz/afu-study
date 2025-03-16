@@ -56,17 +56,9 @@ class AFUPerrin:
             )
 
             if self.total_steps % self.params["batch_size"] == 0:
-<<<<<<< HEAD
-<<<<<<< HEAD
                 self.algo.update()
-=======
                 for _ in range(self.params["batch_size"]):
                     self.algo.update()
->>>>>>> a628006 (fixed part of afuperrin)
-=======
-                for _ in range(self.params["batch_size"]):
-                    self.algo.update()
->>>>>>> a628006be078ecd39f303d77e3d0b423fbd4adbd
 
     @classmethod
     def _get_params_defaults(cls) -> OmegaConf:
