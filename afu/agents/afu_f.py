@@ -2,6 +2,7 @@ import torch
 import gymnasium as gym
 import torch.nn as nn
 import numpy as np
+from omegaconf import OmegaConf
 from bbrl.agents import Agent  # type: ignore
 from bbrl_utils.nn import build_mlp  # type: ignore
 from bbrl.utils.replay_buffer import ReplayBuffer  # type: ignore
@@ -21,6 +22,8 @@ class ContinuousVFunction(Agent):
         super().__init__()
         self.prefix = prefix
 
+        if isinstance(hidden_size, int):
+            hidden_size = [hidden_size]
         self.model = build_mlp([state_dim] + hidden_size + [1], activation=nn.ReLU())
 
     def forward(self, t: int) -> None:
@@ -49,6 +52,8 @@ class ContiniousQFunction(Agent):
         super().__init__()
         self.prefix = prefix
 
+        if isinstance(hidden_size, int):
+            hidden_size = [hidden_size]
         self.model = build_mlp(
             [state_dim + action_dim] + hidden_size + [1], activation=nn.ReLU()
         )
@@ -92,6 +97,8 @@ class GaussianPolicy(Agent):
         # actions. The network outputs both mean and log standard deviation of
         # the Gaussian distribution, allowing for learned state-independent
         # standard deviations.
+        if isinstance(hidden_size, int):
+            hidden_size = [hidden_size]
         self.model = build_mlp(
             [state_dim] + hidden_size + [3 * action_dim],
             activation=nn.ReLU(),
@@ -104,7 +111,7 @@ class GaussianPolicy(Agent):
         obs = self.get(("env/env_obs", t))
         output = self.model(obs)
         mean, log_std, extra_loc = torch.chunk(output, 3, dim=1)
-        log_std = torch.clamp(log_std, self.log_std_min, self.log_std_max)
+        log_std = torch.clamp(log_std, self.log_std_min[1], self.log_std_max[2])
         extra_loc = torch.clamp(extra_loc, -1.0, 1.0)
 
         self.set(("mean", t), mean)
@@ -255,7 +262,7 @@ class AFU:
 
     def _compute_critic_loss(self, workspace: Workspace) -> torch.Tensor:
         """Compute loss for Q-functions (critic) using AFU's method with BBRL."""
-        
+
         states = workspace.get("env/env_obs", 0)
         actions = workspace.get("action", 0)
         targets = workspace.get("target_q", 0)
@@ -271,34 +278,28 @@ class AFU:
         adv1 = q1_values - min_v
         adv2 = q2_values - min_v
 
-        # Apply the transformation Z(x, y)
         def Z(x, y):
-            return torch.where(x >= 0, (x + y) ** 2, x**2 + y**2)
+            mask = (x >= 0).float()
+            return mask * (x + y) ** 2 + (1 - mask) * (x ** 2 + y ** 2)
 
         loss_q1 = Z(adv1, targets - q1_values).mean()
         loss_q2 = Z(adv2, targets - q2_values).mean()
 
         return loss_q1 + loss_q2
 
-    def _compute_actor_loss(
-        self, workspace: Workspace
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Compute policy loss including entropy term, with mode-dependent updates.
 
-        * workspace: BBRL Workspace containing states and actions
-        -> tuple of (policy_loss, temperature_loss)
-        """
+    def _compute_actor_loss(self, workspace: Workspace) -> tuple[torch.Tensor, torch.Tensor]:
+        """Compute policy loss including entropy term, with mode-dependent updates."""
+
         states = workspace.get("env/env_obs", 0)
         sampled_actions = workspace.get("action", 0)
         log_probs = workspace.get("log_prob", 0)
-        q_values = self.q1.model(torch.cat([states, sampled_actions], dim=1)).squeeze(
-            -1
-        )
+        q_values = self.q1.model(torch.cat([states, sampled_actions], dim=1)).squeeze(-1)
 
         # Standard SAC-style actor loss (used in both Alpha and Beta)
         policy_loss = (self.log_alpha.exp() * log_probs - q_values).mean()
 
-        # Temperature loss (same for both)
+        # Temperature loss
         target_entropy = -self.action_dim
         temperature_loss = -(self.log_alpha.exp() * (log_probs + target_entropy)).mean()
 
@@ -312,20 +313,16 @@ class AFU:
             self.mu_zeta_optimizer.step()
 
             # Modify policy gradient to avoid local optima
-            grad = torch.autograd.grad(policy_loss, sampled_actions, retain_graph=True)[
-                0
-            ]
+            grad = torch.autograd.grad(policy_loss, sampled_actions, retain_graph=True)[0]
             correction = mu_pred - sampled_actions
             dot_product = (grad * correction).sum(dim=-1, keepdim=True)
 
-            if (dot_product < 0).any():  # If gradients point in the wrong direction
-                grad = (
-                    grad
-                    - ((grad * correction).sum() / (correction.norm() ** 2 + 1e-6))
-                    * correction
-                )
+            # Projection correcte
+            norm_corr = correction.norm(dim=-1, keepdim=True) ** 2 + 1e-6
+            projection = (dot_product / norm_corr) * correction
+            new_grad = grad - projection * (dot_product < 0).float()
 
-            policy_loss = (grad.detach() * sampled_actions).sum()
+            policy_loss = (new_grad.detach() * sampled_actions).sum()
 
         return policy_loss, temperature_loss
 
@@ -479,7 +476,8 @@ class AFU:
 
                 self.replay_buffer.put(workspace)
 
-                _, _, _, _ = self.update()
+                # _, _, _, _ = self.update()
+                self.update()
 
                 state = next_state
                 episode_reward += reward
@@ -547,3 +545,32 @@ class AFU:
         agent = cls(save_dict["params"])
         agent.load(path)
         return agent
+
+    @classmethod
+    def _get_params_defaults(cls) -> OmegaConf:
+        return OmegaConf.create(
+            {
+                "hidden_size": 128,
+                "gradient_reduction": 0.8,
+                "learning_rate": 3e-4,
+                "tau": 0.01,
+                "replay_size": 100_000,
+                "batch_size": 128,
+                "log_std_min": ("float", -20.0, 0.0, False),
+                "log_std_max": ("float", 0.0, 20.0, False),
+            }
+        )
+    
+    @classmethod
+    def _get_hp_space(cls):
+        return {
+            "hidden_size": ("int", 32, 256, True),
+            "gradient_reduction": ("float", 0.5, 1.0, False),
+            "learning_rate": ("float", 1e-5, 1e-2, True),
+            "tau": ("float", 1e-4, 1e-1, True),
+            "replay_size": ("int", 10_000, 1_000_000, True),
+            "batch_size": ("int", 32, 512, True),
+            "log_std_min": ("float", -20.0, 0.0, False),
+            "log_std_max": ("float", 0.0, 20.0, False),
+        }
+    
