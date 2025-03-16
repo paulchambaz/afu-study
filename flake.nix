@@ -15,50 +15,15 @@
         python = pkgs.python311;
         pythonPackages = python.pkgs;
 
-        regressionLabs = pythonPackages.buildPythonPackage {
-          pname = "regression_labs";
-          version = "0.1.0";
-          format = "setuptools";
-
-          src = pkgs.fetchFromGitHub {
-            owner = "osigaud";
-            repo = "regressionLabs";
-            rev = "main";
-            sha256 = "sha256-gdvHs8jFobfWlTN3SbFnpyXx0CiR4UFC+z8dRraR19M=";
-          };
-
-          propagatedBuildInputs = with pythonPackages; [
-            numpy
-            opencv4
-          ];
-
-          prePatch = ''
-            substituteInPlace setup.py \
-              --replace "hash = subprocess.check_output([\"git\", \"rev-parse\", \"HEAD\"], cwd=\".\").decode(\"ascii\").strip()" \
-              "hash = \"main\""
-          '';
-
-          doCheck = false;
-          pythonImportsCheck = ["regression_labs"];
-        };
-
-        bbrl = pythonPackages.buildPythonPackage {
+        bbrl = pythonPackages.buildPythonPackage rec {
           pname = "bbrl";
-          version = "0.1.0";
+          version = "0.3.3";
           format = "setuptools";
 
-          src = pkgs.fetchFromGitHub {
-            owner = "osigaud";
-            repo = "bbrl";
-            rev = "master";
-            sha256 = "sha256-3u1c4oBbFoAQJjir4/6NSxCmOPQ+OD0jXpGvb7C8EqY=";
+          src = pythonPackages.fetchPypi {
+            inherit pname version;
+            sha256 = "sha256-6eXoROYw4Zy4Cjc5+YkbrRF6z3q9V1KWYK5LuiA2qqk=";
           };
-
-          SETUPTOOLS_SCM_PRETEND_VERSION = "0.1.0";
-
-          nativeBuildInputs = with pythonPackages; [
-            setuptools-scm
-          ];
 
           propagatedBuildInputs = with pythonPackages; [
             pytorch
@@ -76,11 +41,6 @@
             gymnasium
             moviepy
           ];
-
-          prePatch = ''
-            touch src/bbrl/_version.py
-            echo '__version__ = "0.1.0"' > src/bbrl/_version.py
-          '';
 
           doCheck = false;
           pythonImportsCheck = ["bbrl"];
@@ -225,7 +185,6 @@
 
           SETUPTOOLS_SCM_PRETEND_VERSION = "2.6.2.2";
 
-          # Add this to handle setuptools_scm
           preBuild = ''
             export SETUPTOOLS_SCM_PRETEND_VERSION="2.6.2.2"
           '';
@@ -259,6 +218,30 @@
             imageio
             matplotlib
             pkgs.mujoco
+          ];
+
+          doCheck = false;
+        };
+
+        d4rl = pythonPackages.buildPythonPackage {
+          pname = "d4rl";
+          version = "1.1";
+          format = "setuptools";
+
+          src = pkgs.fetchFromGitHub {
+            owner = "Farama-Foundation";
+            repo = "d4rl";
+            rev = "master";
+            sha256 = "sha256-T2SUevL/omsKVrZq1TabAbKZkFd5O5feMoWtUgWIVwI=";
+          };
+
+          propagatedBuildInputs = with pythonPackages; [
+            gymnasium
+            numpy
+            pkgs.mujoco
+            h5py
+            termcolor
+            click
           ];
 
           doCheck = false;
@@ -298,13 +281,13 @@
           qtpy
           gymnasium
           pybox2d
-          regressionLabs
           bbrl
           bbrl_utils
           bbrl_gymnasium
           mazemdp
           ipyreact
           afu-rljax
+          d4rl
         ];
 
         devPackages = with pkgs; [
