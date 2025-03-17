@@ -79,8 +79,10 @@ def plot_histograms(experiment_results, colors_dict, experiment, env_name):
 
 
 def main():
-    algorithms = ["DDPG", "SAC", "AFUPerrin"]
-    experiments = ["OffPolicy", "OnPolicy"]
+    # algorithms = ["DDPG", "SAC", "AFUPerrin"]
+    algorithms = ["AFUPerrin"]
+    # experiments = ["OffPolicy", "OnPolicy"]
+    experiments = ["OnPolicy"]
     env_name = "PendulumStudy-v0"
 
     colors_dict = {
@@ -101,8 +103,8 @@ def main():
                 continue
 
         if experiment_results:
-            if experiment == "OnPolicy":
-                print(experiment_results["AFUPerrin"]["hyperparameter"])
+            # if experiment == "OnPolicy":
+            #     print(experiment_results["AFUPerrin"]["hyperparameter"])
 
             display_results(
                 experiment_results,

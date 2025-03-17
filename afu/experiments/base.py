@@ -112,14 +112,15 @@ class Experiment(ABC):
             self.results[key][step] = value
 
     def save_results(self) -> None:
+        print("Saving results")
         Path("results").mkdir(exist_ok=True)
         policy_type = self.__class__.__name__
         algo_name = self.algo.__name__
-        self.results["metadata"]["end_time"] = time.time()
         filename = f"results/{policy_type}-{algo_name}-{self.params.env_name}.pk"
 
+        print(self.results)
         with open(filename, "wb") as f:
-            pickle.dump({"results": self.results}, f)
+            pickle.dump(self.results, f)
 
     def send_to_influxdb(self, metrics) -> None:
         """
