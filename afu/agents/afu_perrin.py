@@ -56,6 +56,7 @@ class AFUPerrin:
             )
 
             if self.total_steps % self.params["batch_size"] == 0:
+                self.algo.update()
                 for _ in range(self.params["batch_size"]):
                     self.algo.update()
 

@@ -20,7 +20,7 @@ test:
   pytest
 
 quicktest:
-  python -m scripts.evaluate --algo sac --env pendulum --experiment offtoon --run 1 --steps 10 --trials 1
+  python -m scripts.evaluate --algo afuperrin --env pendulum --experiment onpolicy --run 1 --steps 10 --trials 1
 
 fmt:
   ruff format
