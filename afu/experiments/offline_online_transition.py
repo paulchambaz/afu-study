@@ -1,4 +1,4 @@
-from afu.base import Experiment
+from .base import Experiment
 import numpy as np
 
 
