@@ -26,11 +26,11 @@ class QNetwork(Agent):
         """Compute Q-value for a given state-action pair."""
         # get state and action from workspace
         obs = self.get(("env/env_obs", t))
-        action = self.get("action", t)
+        action = self.get(("action", t))
         state_action = torch.cat([obs, action], dim=1)
 
         # compute Q-value
-        q_value = self.mode(state_action).squeeze(-1)
+        q_value = self.model(state_action).squeeze(-1)
         self.set(("q_value", t), q_value)
 
 
@@ -71,7 +71,7 @@ class ANetwork(Agent):
         """Compute A-value for a given state-action pair."""
         # get state and action from workspace
         obs = self.get(("env/env_obs", t))
-        action = self.get("action", t)
+        action = self.get(("action", t))
         state_action = torch.cat([obs, action], dim=1)
 
         # compute A-value
@@ -97,7 +97,7 @@ class PolicyNetwork(Agent):
     def forward(self, t: int) -> None:
         """Compute mean and log_std of action distribution for a given state."""
         # get state from workspace
-        obs = self(("env/env_obs", t))
+        obs = self.get(("env/env_obs", t))
 
         # compute mean from the network
         mean = self.model(obs)
@@ -107,8 +107,10 @@ class PolicyNetwork(Agent):
         self.set(("mean", t), mean)
         self.set(("log_std", t), log_std)
 
-    def sample_action(self, t: int) -> None:
+    def sample_action(self, workspace: Workspace, t: int) -> None:
         """Sample action from the Gaussian distribution using reparameterization trick."""
+        self.workspace = workspace
+
         mean = self.get(("mean", t))
         log_std = self.get(("log_std", t))
         std = log_std.exp()
@@ -123,8 +125,10 @@ class PolicyNetwork(Agent):
         self.set(("sample", t), sample)
         self.set(("action", t), action)
 
-    def get_log_prob(self, t: int) -> None:
+    def get_log_prob(self, workspace: Workspace, t: int) -> None:
         """Compute log probability of an action under the Gaussian distribution."""
+        self.workspace = workspace
+
         mean = self.get(("mean", t))
         log_std = self.get(("log_std", t))
         sample = self.get(("sample", t))
@@ -148,7 +152,7 @@ class AFU:
         self.state_dim = self.train_env.observation_space.shape[0]
         self.action_dim = self.train_env.action_space.shape[0]
 
-        hidden_dims = self.params.hidden_dims
+        hidden_dims = [self.params.hidden_size, self.params.hidden_size]
 
         # Q network
         self.q_network = QNetwork(
@@ -252,7 +256,7 @@ class AFU:
         if evaluation:
             action = workspace.get("mean", 0)
         else:
-            self.policy.sample_action(workspace, t=0)
+            self.policy_network.sample_action(workspace, t=0)
             action = workspace.get("action", 0)
 
         return action.detach().numpy()[0]
@@ -260,12 +264,12 @@ class AFU:
     def update(self):
         """Update all networks based on sampled experience from the replay buffer."""
         # Check if we have enough data for a batch
-        if len(self.replay_buffer) < self.params["batch_size"]:
+        if len(self.replay_buffer) < self.batch_size:
             return
 
         # Sample a batch from the replay buffer
         states, actions, rewards, next_states, dones = self.replay_buffer.sample(
-            self.params["batch_size"],
+            self.batch_size,
             continuous=True,
         )
 
@@ -303,7 +307,7 @@ class AFU:
         policy_loss = self._compute_policy_loss(states)
         self.policy_optimizer.zero_grad()
         policy_loss.backward()
-        self.policy_network.step()
+        self.policy_optimizer.step()
 
         # Update alpha parameter
         alpha_loss = self._compute_alpha_loss(states)
@@ -333,11 +337,13 @@ class AFU:
         if network_idx == 1:
             v_network = self.v_network1
             a_network = self.a_network1
-            prefix = "v1"
+            v_prefix = "v1"
+            a_prefix = "a1"
         else:
             v_network = self.v_network2
             a_network = self.a_network2
-            prefix = "v2"
+            v_prefix = "v2"
+            a_prefix = "a2"
 
         # Compute the V-value 1 : V_(phi_1^target) (s')
         target_workspace1 = Workspace()
@@ -361,7 +367,7 @@ class AFU:
         v_workspace = Workspace()
         v_workspace.set("env/env_obs", 0, states)
         v_network(v_workspace, t=0)
-        v_values = v_workspace.get(f"{prefix}/v_value", 0)
+        v_values = v_workspace.get(f"{v_prefix}/v_value", 0)
         v_values_no_grad = v_values.detach()
 
         # Compute A_(xi_i) (s, a)
@@ -369,7 +375,7 @@ class AFU:
         a_workspace.set("env/env_obs", 0, states)
         a_workspace.set("action", 0, actions)
         a_network(a_workspace, t=0)
-        a_values = a_workspace.get(f"{prefix}/a_value", 0)
+        a_values = a_workspace.get(f"{a_prefix}/a_value", 0)
 
         # TODO: here why do we use the q_targets, which is computeed from the v_targets? im not saying it is wrong, id just like to understand in depth why that is the case. what would happen if we recomputed on that uses the v network directly ? im not sure ?
         # Compute I_i^(s,a) : 1 if V_(phi_i) (s) + A_(xi_i) (s,a) < Q_psi (s, a) else 0
@@ -439,9 +445,7 @@ class AFU:
 
         return q_loss
 
-    def _compute_policy_loss(
-        self, states: torch.Tensor, actions: torch.Tensor
-    ) -> torch.Tensor:
+    def _compute_policy_loss(self, states: torch.Tensor) -> torch.Tensor:
         """
         Compute the policy loss based on the formula.
 
@@ -500,8 +504,7 @@ class AFU:
             target_network.parameters(), source_network.parameters()
         ):
             target_param.data.copy_(
-                (1 - self.params.tau) * target_param.data
-                + self.params.tau * source_param.data
+                (1 - self.tau) * target_param.data + self.tau * source_param.data
             )
 
     def save(self, path: str) -> None:
@@ -513,3 +516,31 @@ class AFU:
     @classmethod
     def loadagent(cls, path: str) -> "AFU":
         pass
+
+    @classmethod
+    def _get_params_defaults(cls) -> OmegaConf:
+        return OmegaConf.create(
+            {
+                "hidden_size": 256,
+                "q_lr": 3e-4,
+                "v_lr": 3e-4,
+                "policy_lr": 3e-4,
+                "alpha_lr": 3e-4,
+                "replay_size": 100_000,
+                "batch_size": 256,
+                "gradient_reduction": 0.3,
+                "tau": 0.01,
+                "gamma": 0.99,
+            }
+        )
+
+    @classmethod
+    def _get_hp_space(cls):
+        return {
+            "hidden_size": ("int", 32, 256, True),
+            "gradient_reduction": ("float", 0.5, 1.0, False),
+            "learning_rate": ("float", 1e-5, 1e-2, True),
+            "tau": ("float", 1e-4, 1e-1, True),
+            "replay_size": ("int", 10_000, 1_000_000, True),
+            "batch_size": ("int", 32, 512, True),
+        }

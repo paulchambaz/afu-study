@@ -1,8 +1,8 @@
 run *ARGS:
-  python -m scripts.evaluate --algo afuperrin --env pendulum --experiment onpolicy --run 5 --steps 80000 --trials 120
+  python -m scripts.evaluate --algo afu --env cartpole --experiment onpolicy --run 11 --steps 50000 --trials 0
 
 run-tiny:
-  python -m scripts.evaluate --algo afuperrin --env pendulum --experiment onpolicy --run 1 --steps 1024 --trials 0
+  python -m scripts.evaluate --algo afu --env cartpole --experiment onpolicy --run 1 --steps 1024 --trials 0
 
 evaluate *ARGS:
   python -m scripts.evaluate {{ARGS}}
