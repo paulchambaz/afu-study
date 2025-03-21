@@ -31,6 +31,7 @@ class OfflineOnlineTransition(Experiment):
                 agent.replay_buffer.push(s, a, r, ns, d)
 
             agent.update()
+            agent.total_steps += 1
             offline_step += 1
             training_step += 1
 
@@ -48,6 +49,9 @@ class OfflineOnlineTransition(Experiment):
                 with results_lock:
                     if "offline_transition" not in shared_results:
                         shared_results["offline_transition"] = training_step
+
+        # TODO: we have to decide if we want to empty the replay buffer at this point
+        # if we do we should also reset the total steps
 
         while training_step < self.params.total_steps:
             state, _ = agent.train_env.reset()
