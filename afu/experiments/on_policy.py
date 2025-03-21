@@ -1,5 +1,5 @@
 from .base import Experiment
-# from tqdm import tqdm  # type: ignore
+from tqdm import tqdm  # type: ignore
 
 
 class OnPolicy(Experiment):
