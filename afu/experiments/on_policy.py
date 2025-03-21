@@ -7,10 +7,10 @@ class OnPolicy(Experiment):
         training_steps = 0
         agent = self.algo(self.hyperparameters)
 
-        # progress = tqdm(
-        #     range(self.params.total_steps),
-        #     desc=f"Training {i}/{self.params.n}",
-        # )
+        progress = tqdm(
+            range(self.params.total_steps),
+            desc=f"Training {i}/{self.params.n}",
+        )
 
         while training_steps < self.params.total_steps:
             state, _ = agent.train_env.reset()
@@ -30,7 +30,7 @@ class OnPolicy(Experiment):
                 agent.total_steps += 1
                 training_steps += 1
 
-                # progress.update(1)
+                progress.update(1)
 
                 if training_steps % self.params.interval == 0:
                     eval_results = self.evaluation(agent)
@@ -45,7 +45,7 @@ class OnPolicy(Experiment):
                                 current_results + eval_results
                             )
 
-                    # progress.set_postfix({"eval": self._get_stats(eval_results)})
+                    progress.set_postfix({"eval": self._get_stats(eval_results)})
 
                 if done:
                     break
