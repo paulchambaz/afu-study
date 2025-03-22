@@ -81,7 +81,7 @@ def plot_histograms(experiment_results, colors_dict, experiment, env_name):
 def main():
     algorithms = ["DDPG", "SAC", "AFU"]
     # experiments = ["OffPolicy", "OnPolicy"]
-    experiments = ["OnPolicy"]
+    experiments = ["OffPolicy"]
     env_name = "PendulumStudy-v0"
     # env_name = "CartPoleContinuousStudy-v0"
 
