@@ -219,6 +219,7 @@ class Experiment(ABC):
             {
                 "n": 15,
                 "interval": 100,
+                "update_interval": 1000,
                 "total_steps": 50_000,
                 "seed": None,
             }
