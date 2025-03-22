@@ -508,14 +508,72 @@ class AFU:
             )
 
     def save(self, path: str) -> None:
-        pass
+        # Create a dictionary with all components that need to be saved
+        save_dict = {
+            # Network states
+            "q_network_state": self.q_network.state_dict(),
+            "v_network1_state": self.v_network1.state_dict(),
+            "v_network2_state": self.v_network2.state_dict(),
+            "v_target_network1_state": self.v_target_network1.state_dict(),
+            "v_target_network2_state": self.v_target_network2.state_dict(),
+            "a_network1_state": self.a_network1.state_dict(),
+            "a_network2_state": self.a_network2.state_dict(),
+            "policy_network_state": self.policy_network.state_dict(),
+            # Optimizer states
+            "q_optimizer_state": self.q_optimizer.state_dict(),
+            "v1_optimizer_state": self.v1_optimizer.state_dict(),
+            "v2_optimizer_state": self.v2_optimizer.state_dict(),
+            "a1_optimizer_state": self.a1_optimizer.state_dict(),
+            "a2_optimizer_state": self.a2_optimizer.state_dict(),
+            "policy_optimizer_state": self.policy_optimizer.state_dict(),
+            "alpha_optimizer_state": self.alpha_optimizer.state_dict(),
+            # Temperature parameter
+            "log_alpha": self.log_alpha.detach().cpu(),
+            # Other parameters
+            "params": self.params,
+            "total_steps": self.total_steps,
+        }
+
+        # Save dictionary to file
+        torch.save(save_dict, path)
 
     def load(self, path: str) -> None:
-        pass
+        # Load the saved dictionary
+        save_dict = torch.load(path)
+
+        # Restore network states
+        self.q_network.load_state_dict(save_dict["q_network_state"])
+        self.v_network1.load_state_dict(save_dict["v_network1_state"])
+        self.v_network2.load_state_dict(save_dict["v_network2_state"])
+        self.v_target_network1.load_state_dict(save_dict["v_target_network1_state"])
+        self.v_target_network2.load_state_dict(save_dict["v_target_network2_state"])
+        self.a_network1.load_state_dict(save_dict["a_network1_state"])
+        self.a_network2.load_state_dict(save_dict["a_network2_state"])
+        self.policy_network.load_state_dict(save_dict["policy_network_state"])
+
+        # Restore optimizer states
+        self.q_optimizer.load_state_dict(save_dict["q_optimizer_state"])
+        self.v1_optimizer.load_state_dict(save_dict["v1_optimizer_state"])
+        self.v2_optimizer.load_state_dict(save_dict["v2_optimizer_state"])
+        self.a1_optimizer.load_state_dict(save_dict["a1_optimizer_state"])
+        self.a2_optimizer.load_state_dict(save_dict["a2_optimizer_state"])
+        self.policy_optimizer.load_state_dict(save_dict["policy_optimizer_state"])
+        self.alpha_optimizer.load_state_dict(save_dict["alpha_optimizer_state"])
+
+        # Restore temperature parameter
+        with torch.no_grad():
+            self.log_alpha.copy_(save_dict["log_alpha"])
+
+        # Restore other parameters
+        self.params = save_dict["params"]
+        self.total_steps = save_dict["total_steps"]
 
     @classmethod
     def loadagent(cls, path: str) -> "AFU":
-        pass
+        save_dict = torch.load(path)
+        agent = cls(save_dict["params"])
+        agent.load(path)
+        return agent
 
     @classmethod
     def _get_params_defaults(cls) -> OmegaConf:

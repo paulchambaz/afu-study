@@ -25,9 +25,7 @@ class OnPolicy(Experiment):
 
                 agent.replay_buffer.push(state, action, reward, next_state, done)
 
-                if training_steps % self.params.update_interval == 0:
-                    for _ in range(self.params.update_interval):
-                        agent.update()
+                agent.update()
 
                 state = next_state
                 agent.total_steps += 1
