@@ -60,8 +60,8 @@ def plot_histograms(experiment_results, colors_dict, experiment, env_name):
 
         all_timesteps = sorted(list(rewards_data.keys()))
 
-        # last_timesteps = all_timesteps[-int(len(all_timesteps) * 0.01) :]
-        last_timesteps = all_timesteps[-1:]
+        last_timesteps = all_timesteps[-int(len(all_timesteps) * 0.01) :]
+        # last_timesteps = all_timesteps[-1:]
 
         all_rewards = []
         for timestep in last_timesteps:
@@ -69,8 +69,8 @@ def plot_histograms(experiment_results, colors_dict, experiment, env_name):
 
         plt.figure(figsize=(10, 6))
         plt.hist(all_rewards, bins=50, color=colors_dict[algo], alpha=0.7)
-        # plt.title(f"{algo} Reward Distribution - Last 30% of {experiment} Training")
-        plt.title(f"{algo} Reward Distribution - Last episode {experiment} Training")
+        plt.title(f"{algo} Reward Distribution - Last 1% of {experiment} Training")
+        # plt.title(f"{algo} Reward Distribution - Last episode {experiment} Training")
         plt.xlabel("Return")
         plt.ylabel("Frequency")
         plt.grid(True, alpha=0.3)
@@ -81,10 +81,12 @@ def plot_histograms(experiment_results, colors_dict, experiment, env_name):
 
 
 def main():
-    algorithms = ["DDPG", "SAC", "AFU"]
+    # algorithms = ["DDPG", "SAC", "AFU"]
+    algorithms = ["SAC"]
     # experiments = ["OffPolicy", "OnPolicy"]
     experiments = ["OnPolicy"]
-    env_name = "PendulumStudy-v0"
+    env_name = "LunarLanderContinuousStudy-v0"
+    # env_name = "PendulumStudy-v0"
     # env_name = "CartPoleContinuousStudy-v0"
 
     colors_dict = {
