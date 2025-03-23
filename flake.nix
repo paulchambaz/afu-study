@@ -211,7 +211,6 @@
             tensorboard
             joblib
             gymnasium
-            # pkgs.python312Packages.mujoco
             tensorboardX
             numpy
             pandas
