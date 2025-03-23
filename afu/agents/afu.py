@@ -505,8 +505,8 @@ class AFU:
                 (1 - self.tau) * target_param.data + self.tau * source_param.data
             )
 
-    def save(self, path: str) -> None:
-        save_dict = {
+    def get_weights(self) -> dict:
+        return {
             # Network states
             "q_network_state": self.q_network.state_dict(),
             "v_network1_state": self.v_network1.state_dict(),
@@ -531,7 +531,8 @@ class AFU:
             "total_steps": self.total_steps,
         }
 
-        # Save dictionary to file
+    def save(self, path: str) -> None:
+        save_dict = self.get_weights()
         torch.save(save_dict, path)
 
     def load(self, path: str) -> None:
