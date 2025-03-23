@@ -196,7 +196,6 @@ class SAC:
         self.target_entropy = -self.action_dim
         self.tau = self.params.tau
         self.gamma = self.params.gamma
-        self.total_steps = 0
 
     def select_action(self, state: np.ndarray, evaluation: bool = False) -> np.ndarray:
         workspace = Workspace()
@@ -354,7 +353,7 @@ class SAC:
         q_targets = rewards + (1.0 - dones) * self.gamma * v_targets
 
         # Compute the mean squared error loss : L_Q (theta)
-        q_loss = torch.mean((q_values - q_targets.detach()) ** 2)
+        q_loss = 0.5 * torch.mean((q_values - q_targets.detach()) ** 2)
 
         return q_loss
 
@@ -447,7 +446,6 @@ class SAC:
             "log_alpha": self.log_alpha.detach().cpu(),
             # Other parameters
             "params": self.params,
-            "total_steps": self.total_steps,
         }
 
     def save(self, path: str) -> None:
@@ -477,11 +475,9 @@ class SAC:
 
         # Restore other parameters
         self.params = save_dict["params"]
-        self.total_steps = save_dict["total_steps"]
 
     @classmethod
     def loadagent(cls, path: str) -> "SAC":
-        """Class method to load an agent from a specified path."""
         save_dict = torch.load(path)
         agent = cls(save_dict["params"])
         agent.load(path)

@@ -82,7 +82,7 @@ def plot_histograms(experiment_results, colors_dict, experiment, env_name):
 
 def main():
     # algorithms = ["DDPG", "SAC", "AFU"]
-    algorithms = ["SAC"]
+    algorithms = ["SAC", "AFU"]
     # experiments = ["OffPolicy", "OnPolicy"]
     experiments = ["OffPolicy"]
     env_name = "LunarLanderContinuousStudy-v0"
