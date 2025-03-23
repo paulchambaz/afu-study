@@ -4,8 +4,10 @@ import numpy as np
 
 
 class LunarLanderContinuousStudy(LunarLander):
-    def __init__(self):
-        super().__init__(continuous=True)
+    def __init__(self, *args, **kwargs):
+        render_mode = kwargs.pop("render_mode", None)
+        super().__init__(*args, continuous=True)
+        self.render_mode = render_mode
 
     def set_state(
         self,
