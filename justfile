@@ -2,7 +2,7 @@ run *ARGS:
   python -m scripts.evaluate --algo sac --env pendulum --experiment onpolicy --run 5 --steps 50000 --trials 0
 
 run-tiny:
-  python -m scripts.evaluate --algo afu --env pendulum --experiment offpolicy --run 1 --steps 1024 --trials 0
+  python -m scripts.evaluate --algo sac --env pendulum --experiment onpolicy --run 1 --steps 1024 --trials 0
 
 evaluate *ARGS:
   python -m scripts.evaluate {{ARGS}}
@@ -14,7 +14,7 @@ benchmark *ARGS:
   python -m scripts.benchmark {{ARGS}}
 
 demo:
-  python -m scripts.demo --algo afu --env pendulum --episodes 100 --weights ./weights/OnPolicy-AFU-PendulumStudy-v0-weights.pt
+  python -m scripts.demo --algo sac --env pendulum --episodes 1 --weights ./weights/OnPolicy-SAC-PendulumStudy-v0-weights.pt
 
 test:
   pytest

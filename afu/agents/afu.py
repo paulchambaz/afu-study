@@ -8,7 +8,6 @@ from bbrl.agents import Agent  # type: ignore
 from bbrl_utils.nn import build_mlp  # type: ignore
 from bbrl.workspace import Workspace  # type: ignore
 from .memory import ReplayBuffer
-from tqdm import tqdm  # type: ignore
 
 
 class QNetwork(Agent):
@@ -377,7 +376,6 @@ class AFU:
         a_network(a_workspace, t=0)
         a_values = a_workspace.get(f"{a_prefix}/a_value", 0)
 
-        # TODO: here why do we use the q_targets, which is computeed from the v_targets? im not saying it is wrong, id just like to understand in depth why that is the case. what would happen if we recomputed on that uses the v network directly ? im not sure ?
         # Compute I_i^(s,a) : 1 if V_(phi_i) (s) + A_(xi_i) (s,a) < Q_psi (s, a) else 0
         indicators = (v_values + a_values < q_targets).float()
 
@@ -391,7 +389,6 @@ class AFU:
         x = upsilon_values - q_targets
         y = a_values
 
-        # TODO: here i do not understand at all why we use a positive mask, can you explain the intuition behind why ? also explain in terms of the data structure that it creates
         # Compute Z(x, y) : (x + y)^2 if x >= 0, else x^2 + y^2
         positive_mask = x >= 0
         z_values = torch.zeros_like(x)
@@ -476,7 +473,8 @@ class AFU:
         return policy_loss
 
     def _compute_alpha_loss(self, states: torch.Tensor) -> torch.Tensor:
-        """Compute the temperature parameter loss.
+        """
+        Compute the temperature parameter loss.
 
         L_temp (alpha) = [ -log (policy_theta (a_s | s)) - alpha target_entropy ]
         """
@@ -508,7 +506,6 @@ class AFU:
             )
 
     def save(self, path: str) -> None:
-        # Create a dictionary with all components that need to be saved
         save_dict = {
             # Network states
             "q_network_state": self.q_network.state_dict(),
@@ -538,7 +535,6 @@ class AFU:
         torch.save(save_dict, path)
 
     def load(self, path: str) -> None:
-        # Load the saved dictionary
         save_dict = torch.load(path)
 
         # Restore network states
@@ -595,10 +591,14 @@ class AFU:
     @classmethod
     def _get_hp_space(cls):
         return {
-            "hidden_size": ("int", 32, 256, True),
-            "gradient_reduction": ("float", 0.5, 1.0, False),
-            "learning_rate": ("float", 1e-5, 1e-2, True),
-            "tau": ("float", 1e-4, 1e-1, True),
+            "hidden_size": ("int", 32, 512, True),
+            "q_lr": ("float", 1e-5, 1e-2, True),
+            "v_lr": ("float", 1e-5, 1e-2, True),
+            "policy_lr": ("float", 1e-5, 1e-2, True),
+            "alpha_lr": ("float", 1e-5, 1e-2, True),
             "replay_size": ("int", 10_000, 1_000_000, True),
-            "batch_size": ("int", 32, 512, True),
+            "batch_size": ("int", 32, 1024, True),
+            "gradient_reduction": ("float", 0.0, 1.0),
+            "tau": ("float", 1e-4, 1e-1, True),
+            "gamma": ("float", 0.9, 0.999, False),
         }

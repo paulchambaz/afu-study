@@ -56,3 +56,6 @@ class OnPolicy(Experiment):
 
             if training_steps >= self.params.total_steps:
                 break
+
+        with results_lock:
+            shared_results["agent"] = agent.get_weights()
