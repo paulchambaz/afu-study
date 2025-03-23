@@ -3,7 +3,6 @@ import gymnasium as gym
 import pickle
 import numpy as np
 from pathlib import Path
-import time
 
 from afu.agents.ddpg import DDPG
 from afu.agents.sac import SAC
@@ -41,9 +40,10 @@ def scale_action(action, target_space):
     return scaled
 
 
-def visualize_environment(env_name, agent, episodes=5, delay=0.01, render_mode="human"):
+def visualize_environment(env_name, agent, episodes=5, render_mode="human"):
     env = gym.make(env_name, render_mode=render_mode)
     action_space = env.unwrapped.get_action_space()
+    print(action_space)
 
     total_rewards = []
 
@@ -56,25 +56,16 @@ def visualize_environment(env_name, agent, episodes=5, delay=0.01, render_mode="
         print(f"Episode {episode + 1}/{episodes}")
 
         while not done:
-            # Render the environment
             env.render()
-
-            # Select action from the agent
             action = agent.select_action(observation, evaluation=True)
-
-            # Scale action to the environment's action space
             scaled_action = scale_action(action, action_space)
 
-            # Step the environment
             observation, reward, terminated, truncated, _ = env.step(scaled_action)
             done = terminated or truncated
             episode_reward += reward
 
-            # Print action and reward information
             print(f"Step {step}: Action={scaled_action}, Reward={reward:.4f}")
 
-            # Delay to make visualization watchable
-            # time.sleep(delay)
             step += 1
 
         print(f"Episode {episode + 1} finished with total reward: {episode_reward:.4f}")
@@ -128,9 +119,6 @@ def main():
     parser.add_argument(
         "--episodes", type=int, default=5, help="Number of episodes to run"
     )
-    parser.add_argument(
-        "--delay", type=float, default=0.01, help="Delay between frames (seconds)"
-    )
 
     # Weights and results loading
     group = parser.add_mutually_exclusive_group(required=True)
@@ -155,13 +143,10 @@ def main():
     algo_class = ALGORITHMS[args.algo]
     env_name = ENVS[args.env]
 
-    # Load agent based on provided arguments
     if args.results:
-        # Load from results file (includes hyperparameters)
         results = load_results_file(args.results)
         hyperparameters = results["hyperparameter"]
 
-        # Construct weights filename from results filename
         results_path = Path(args.results)
         weights_path = results_path.parent / f"{results_path.stem}-weights.pt"
 
@@ -174,7 +159,6 @@ def main():
                 env_name, algo_class, weights_path, hyperparameters
             )
     else:
-        # Load from weights file
         agent = load_agent_from_weights(env_name, algo_class, args.weights)
 
     # Run visualization
@@ -182,7 +166,6 @@ def main():
         env_name=env_name,
         agent=agent,
         episodes=args.episodes,
-        delay=args.delay,
         render_mode=args.render_mode,
     )
 

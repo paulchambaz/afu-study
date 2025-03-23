@@ -1,4 +1,5 @@
 import gymnasium as gym
+import torch
 import optuna
 import multiprocessing as mp
 from abc import ABC, abstractmethod
@@ -114,6 +115,7 @@ class Experiment(ABC):
     def save_results(self) -> None:
         print("Saving results")
         Path("results").mkdir(exist_ok=True)
+        Path("weights").mkdir(exist_ok=True)
         policy_type = self.__class__.__name__
         algo_name = self.algo.__name__
 
@@ -125,15 +127,13 @@ class Experiment(ABC):
             pickle.dump(self.results, f)
         print(f"Results saved to {results_filename}")
 
-        # Create an instance of the algorithm with the current hyperparameters
-        # This is needed if we're in the tuned_run method where we don't have an agent instance
-        agent = self.algo(self.hyperparameters)
+        agent = self.agent
 
         # Save agent weights
         weights_filename = (
-            f"results/{policy_type}-{algo_name}-{self.params.env_name}-weights.pt"
+            f"weights/{policy_type}-{algo_name}-{self.params.env_name}-weights.pt"
         )
-        agent.save(weights_filename)
+        torch.save(agent, weights_filename)
         print(f"Agent weights saved to {weights_filename}")
 
     def send_to_influxdb(self, metrics) -> None:
@@ -168,8 +168,8 @@ class Experiment(ABC):
         for p in processes:
             p.join()
 
-        self.results = dict(shared_results)
-        self.results["rewards"] = dict(shared_results["rewards"])
+        self.results = {"rewards": dict(shared_results["rewards"])}
+        self.agent = dict(shared_results["agent"])
 
     def tuned_run(self, n_trials=50, n_parallel_trials=5, n_runs=3):
         if n_trials > 0:
