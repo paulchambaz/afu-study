@@ -18,6 +18,9 @@ class OnPolicy(Experiment):
             while True:
                 action = agent.select_action(state)
                 action = self._scale_action(action, self.action_space)
+
+                print(action)
+
                 next_state, reward, terminated, truncated, _ = agent.train_env.step(
                     action
                 )

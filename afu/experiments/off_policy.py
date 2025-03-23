@@ -26,7 +26,8 @@ class OffPolicy(Experiment):
             state = agent.train_env.unwrapped.get_obs()
 
             act_low, act_high = agent.train_env.unwrapped.get_action_space()
-            action = np.random.uniform(low=-1.0, high=1.0, size=(1,))
+
+            action = np.random.uniform(low=-1.0, high=1.0, size=act_low.shape)
 
             next_state, reward, terminated, truncated, _ = agent.train_env.step(action)
             done = terminated or truncated
@@ -55,3 +56,6 @@ class OffPolicy(Experiment):
 
             if training_steps >= self.params["total_steps"]:
                 break
+
+        with results_lock:
+            shared_results["agent"] = agent.get_weights()
