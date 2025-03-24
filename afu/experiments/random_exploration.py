@@ -25,10 +25,10 @@ class RandomWalk(Experiment):
             agent.train_env.unwrapped.set_state(*state)
 
             while True:
-                action = agent.select_action(state)
+                action = np.random.uniform(
+                    low=-1.0, high=1.0, size=self.action_space[0].shape
+                )
                 action = self._scale_action(action, self.action_space)
-
-                print(action)
 
                 next_state, reward, terminated, truncated, _ = agent.train_env.step(
                     action

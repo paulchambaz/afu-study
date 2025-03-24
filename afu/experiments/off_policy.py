@@ -27,7 +27,10 @@ class OffPolicy(Experiment):
 
             act_low, act_high = agent.train_env.unwrapped.get_action_space()
 
-            action = np.random.uniform(low=act_low, high=act_high, size=act_low.shape)
+            action = np.random.uniform(
+                low=-1.0, high=1.0, size=self.action_space[0].shape
+            )
+            action = self._scale_action(action, self.action_space)
 
             next_state, reward, terminated, truncated, _ = agent.train_env.step(action)
             done = terminated or truncated
