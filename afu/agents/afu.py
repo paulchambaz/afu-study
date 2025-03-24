@@ -583,7 +583,7 @@ class AFU:
                 "alpha_lr": 3e-4,
                 "replay_size": 100_000,
                 "batch_size": 256,
-                "gradient_reduction": 0.3,
+                "gradient_reduction": 0.5,
                 "tau": 0.01,
                 "gamma": 0.99,
             }
