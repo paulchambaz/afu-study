@@ -196,6 +196,7 @@ class SAC:
         self.target_entropy = -self.action_dim
         self.tau = self.params.tau
         self.gamma = self.params.gamma
+        self.total_steps = 0
 
     def select_action(self, state: np.ndarray, evaluation: bool = False) -> np.ndarray:
         workspace = Workspace()
