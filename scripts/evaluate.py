@@ -10,7 +10,8 @@ from afu.experiments.base import Experiment
 from afu.experiments.off_policy import OffPolicy
 from afu.experiments.on_policy import OnPolicy
 from afu.experiments.off_to_on import OffToOnPolicy
-from afu.experiments.test import NewExperiment
+from afu.experiments.random_walk_policy import RandomWalkPolicy
+from afu.experiments.hybrid_policy import HybridPolicy
 import argparse
 
 from typing import Type, Any
@@ -36,8 +37,9 @@ ENVS: dict[str, str] = {
 EXPERIMENTS: dict[str, Type[Experiment]] = {
     "onpolicy": OnPolicy,
     "offpolicy": OffPolicy,
-    "test": NewExperiment,
     "offtoon": OffToOnPolicy,
+    "randomwalkpolicy": RandomWalkPolicy,
+    "hybridpolicy": HybridPolicy,
 }
 
 
