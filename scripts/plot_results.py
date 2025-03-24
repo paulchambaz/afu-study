@@ -54,7 +54,7 @@ def display_results(results_dict, colors_dict, title, N=4):
     plt.show()
 
 
-def plot_histograms(experiment_results, colors_dict, experiment, env_name):
+def plot_histograms(experiment_results, colors_dict, experiment, env):
     for algo, results in experiment_results.items():
         rewards_data = results["rewards"]
 
@@ -69,7 +69,9 @@ def plot_histograms(experiment_results, colors_dict, experiment, env_name):
 
         plt.figure(figsize=(10, 6))
         plt.hist(all_rewards, bins=50, color=colors_dict[algo], alpha=0.7)
-        plt.title(f"{algo} Reward Distribution - Last 1% of {experiment} Training")
+        plt.title(
+            f"{env} {algo} Reward Distribution - Last 1% of {experiment} Training"
+        )
         # plt.title(f"{algo} Reward Distribution - Last episode {experiment} Training")
         plt.xlabel("Return")
         plt.ylabel("Frequency")
@@ -85,9 +87,16 @@ def main():
     algorithms = ["SAC", "AFU"]
     # experiments = ["OffPolicy", "OnPolicy"]
     experiments = ["OffPolicy"]
-    env_name = "LunarLanderContinuousStudy-v0"
+    # env_name = "LunarLanderContinuousStudy-v0"
     # env_name = "PendulumStudy-v0"
-    # env_name = "CartPoleContinuousStudy-v0"
+
+    env = "Lunar Lander"
+    env_dict = {
+        "Cartpole Continuous": "CartPoleContinuousStudy-v0",
+        "Pendulum": "PendulumStudy-v0",
+        "Lunar Lander": "LunarLanderContinuousStudy-v0",
+    }
+    env_name = env_dict[env]
 
     colors_dict = {
         "DDPG": "#D00000",
@@ -113,11 +122,11 @@ def main():
             display_results(
                 experiment_results,
                 colors_dict,
-                f"{experiment} Training Progress",
+                f"{env} {experiment} Training Progress",
                 N=4 if experiment == "OnPolicy" else 1,
             )
 
-            plot_histograms(experiment_results, colors_dict, experiment, env_name)
+            plot_histograms(experiment_results, colors_dict, experiment, env)
 
 
 if __name__ == "__main__":

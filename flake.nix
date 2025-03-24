@@ -231,7 +231,7 @@
             owner = "Farama-Foundation";
             repo = "d4rl";
             rev = "master";
-            sha256 = "sha256-T2SUevL/omsKVrZq1TabAbKZkFd5O5feMoWtUgWIVwI=";
+            sha256 = "sha256-YUAnbOjtqYPD18H5diOsEa5MpFyDiqbV3d/YeqfsI4E=";
           };
 
           propagatedBuildInputs = with pythonPackages; [
