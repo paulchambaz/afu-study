@@ -87,8 +87,6 @@ def main():
     algorithms = ["SAC", "AFU"]
     # experiments = ["OffPolicy", "OnPolicy"]
     experiments = ["OffPolicy"]
-    # env_name = "LunarLanderContinuousStudy-v0"
-    # env_name = "PendulumStudy-v0"
 
     env = "Lunar Lander"
     env_dict = {
