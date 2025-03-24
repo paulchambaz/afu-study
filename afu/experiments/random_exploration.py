@@ -5,7 +5,7 @@ from tqdm import tqdm  # type: ignore
 
 class RandomWalk(Experiment):
     def run(self, i, shared_results, results_lock):
-        obs_scale_factor = 0.9
+        obs_scale_factor = 1.0
 
         training_steps = 0
         agent = self.algo(self.hyperparameters)
