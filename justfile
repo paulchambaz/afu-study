@@ -1,8 +1,8 @@
 run *ARGS:
-  python -m scripts.evaluate --algo sac --env mountaincar --experiment onpolicy --run 1 --steps 100000 --trials 0
-  python -m scripts.evaluate --algo afu --env mountaincar --experiment onpolicy --run 1 --steps 100000 --trials 0
-  python -m scripts.evaluate --algo sac --env mountaincar --experiment offpolicy --run 1 --steps 100000 --trials 0
-  python -m scripts.evaluate --algo afu --env mountaincar --experiment offpolicy --run 1 --steps 100000 --trials 0
+  python -m scripts.evaluate --algo sac --env mountaincar --experiment onpolicy --run 5 --steps 100000 --trials 0
+  python -m scripts.evaluate --algo afu --env mountaincar --experiment onpolicy --run 5 --steps 100000 --trials 0
+  python -m scripts.evaluate --algo sac --env mountaincar --experiment offpolicy --run 5 --steps 100000 --trials 0
+  python -m scripts.evaluate --algo afu --env mountaincar --experiment offpolicy --run 5 --steps 100000 --trials 0
 
 run-tiny:
   python -m scripts.evaluate --algo sac --env mountaincar --experiment offpolicy --run 1 --steps 1024 --trials 0
