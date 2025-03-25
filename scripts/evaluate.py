@@ -7,12 +7,14 @@ from afu.agents.afu import AFU
 from afu.agents.sac_opti import SACOpti
 from afu.agents.afu_opti import AFUOpti
 
+from afu.agents.calql import CalQL
+
 from afu.agents.afu_perrin import AFUPerrin
 
 from afu.experiments.base import Experiment
 from afu.experiments.off_policy import OffPolicy
 from afu.experiments.on_policy import OnPolicy
-from afu.experiments.off_to_on import OffToOnPolicy
+from afu.experiments.offline_online_transition import OfflineOnlineTransition
 from afu.experiments.random_walk_policy import RandomWalkPolicy
 from afu.experiments.hybrid_policy import HybridPolicy
 from afu.experiments.optimal_off_policy import OptimalOffPolicy
@@ -28,6 +30,7 @@ ALGORITHMS: dict[str, Any] = {
     "afu": AFU,
     "afuopti": AFUOpti,
     "afuperrin": AFUPerrin,
+    "calql": CalQL,
 }
 
 
@@ -44,7 +47,7 @@ ENVS: dict[str, str] = {
 EXPERIMENTS: dict[str, Type[Experiment]] = {
     "onpolicy": OnPolicy,
     "offpolicy": OffPolicy,
-    "offtoon": OffToOnPolicy,
+    "offtoon": OfflineOnlineTransition,
     "randomwalkpolicy": RandomWalkPolicy,
     "hybridpolicy": HybridPolicy,
     "optimaloffpolicy": OptimalOffPolicy,
