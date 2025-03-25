@@ -5,6 +5,7 @@ from . import bipedalwalker
 from . import swimmer
 from . import lunarlander
 from . import ant
+from . import antmaze
 
 __all__ = [
     "bipedalwalker",
@@ -14,4 +15,5 @@ __all__ = [
     "swimmer",
     "lunarlander",
     "ant",
+    "antmaze",
 ]
