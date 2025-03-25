@@ -4,6 +4,9 @@ from afu.agents.ddpg import DDPG
 from afu.agents.sac import SAC
 from afu.agents.afu import AFU
 
+from afu.agents.sac_opti import SACOpti
+from afu.agents.afu_opti import AFUOpti
+
 from afu.agents.afu_perrin import AFUPerrin
 
 from afu.experiments.base import Experiment
@@ -12,6 +15,7 @@ from afu.experiments.on_policy import OnPolicy
 from afu.experiments.off_to_on import OffToOnPolicy
 from afu.experiments.random_walk_policy import RandomWalkPolicy
 from afu.experiments.hybrid_policy import HybridPolicy
+from afu.experiments.optimal_off_policy import OptimalOffPolicy
 import argparse
 
 from typing import Type, Any
@@ -20,7 +24,9 @@ from typing import Type, Any
 ALGORITHMS: dict[str, Any] = {
     "ddpg": DDPG,
     "sac": SAC,
+    "sacopti": SACOpti,
     "afu": AFU,
+    "afuopti": AFUOpti,
     "afuperrin": AFUPerrin,
 }
 
@@ -41,6 +47,7 @@ EXPERIMENTS: dict[str, Type[Experiment]] = {
     "offtoon": OffToOnPolicy,
     "randomwalkpolicy": RandomWalkPolicy,
     "hybridpolicy": HybridPolicy,
+    "optimaloffpolicy": OptimalOffPolicy,
 }
 
 
