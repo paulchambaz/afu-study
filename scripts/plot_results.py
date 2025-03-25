@@ -88,7 +88,7 @@ def main():
     # experiments = ["OffPolicy", "OnPolicy", "RandomWalkPolicy"]
     experiments = ["RandomWalkPolicy"]
 
-    env = "Lunar Lander"
+    env = "Pendulum"
     env_dict = {
         "Cartpole Continuous": "CartPoleContinuousStudy-v0",
         "Pendulum": "PendulumStudy-v0",
