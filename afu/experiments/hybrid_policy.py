@@ -6,7 +6,7 @@ import gymnasium as gym
 
 class HybridPolicy(Experiment):
     def run(self, i, shared_results, results_lock):
-        epsilons = [0.0, 0.5, 1.0]
+        epsilons = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         obs_scale_factor = 1.0
 
         for epsilon in epsilons:
