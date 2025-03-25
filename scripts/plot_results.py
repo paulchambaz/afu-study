@@ -86,11 +86,12 @@ def main():
     # algorithms = ["DDPG", "SAC", "AFU"]
     algorithms = ["SAC", "AFU"]
     # experiments = ["OffPolicy", "OnPolicy", "RandomWalkPolicy"]
-    experiments = ["RandomWalkPolicy"]
+    experiments = ["OffPolicy"]
 
-    env = "Lunar Lander"
+    env = "Mountain Car"
     env_dict = {
         "Cartpole Continuous": "CartPoleContinuousStudy-v0",
+        "Mountain Car": "MountainCarContinuousStudy-v0",
         "Pendulum": "PendulumStudy-v0",
         "Lunar Lander": "LunarLanderContinuousStudy-v0",
     }

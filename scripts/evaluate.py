@@ -27,6 +27,7 @@ ALGORITHMS: dict[str, Any] = {
 
 ENVS: dict[str, str] = {
     "cartpole": "CartPoleContinuousStudy-v0",
+    "mountaincar": "MountainCarContinuousStudy-v0",
     "pendulum": "PendulumStudy-v0",
     "lunarlander": "LunarLanderContinuousStudy-v0",
     "swimmer": "SwimmerStudy-v0",
