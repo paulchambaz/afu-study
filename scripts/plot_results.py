@@ -84,7 +84,7 @@ def plot_histograms(experiment_results, colors_dict, experiment, env):
 
 def main():
     # algorithms = ["DDPG", "SAC", "AFU"]
-    algorithms = ["SAC"]
+    algorithms = ["SAC", "AFU"]
     # experiments = ["OffPolicy", "OnPolicy", "RandomWalkPolicy", "OptimalOffPolicy"]
     experiments = ["OptimalOffPolicy"]
 

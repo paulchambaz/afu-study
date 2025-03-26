@@ -4,9 +4,6 @@ import numpy as np
 
 
 class SwimmerEnvStudy(SwimmerEnv):
-    def __init__(self):
-        super().__init__()
-
     def _set_state(
         self,
         front_angle,
