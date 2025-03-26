@@ -4,7 +4,7 @@ import numpy as np
 
 
 class ContinuousCartPoleEnvStudy(ContinuousCartPoleEnv):
-    def set_state(
+    def _set_state(
         self, cart_position, cart_velocity, pole_angle, pole_angular_velocity
     ):
         self.state = (

@@ -16,7 +16,7 @@ class LunarLanderContinuousStudy(LunarLander):
         super().__init__(*args, continuous=True, **kwargs)
         self.render_mode = render_mode
 
-    def set_state(
+    def _set_state(
         self,
         x_pos,
         y_pos,

@@ -7,7 +7,7 @@ class SwimmerEnvStudy(SwimmerEnv):
     def __init__(self):
         super().__init__()
 
-    def set_state(
+    def _set_state(
         self,
         front_angle,
         rot1_angle,
@@ -20,20 +20,7 @@ class SwimmerEnvStudy(SwimmerEnv):
         x_pos=None,
         y_pos=None,
     ):
-        """Set the state of the swimmer.
-
-        Args:
-            front_angle (float): angle of the front tip
-            rot1_angle (float): angle of first rotor
-            rot2_angle (float): angle of second rotor
-            tip_vel_x (float): velocity of tip along x-axis
-            tip_vel_y (float): velocity of tip along y-axis
-            front_angular_vel (float): angular velocity of front tip
-            rot1_angular_vel (float): angular velocity of first rotor
-            rot2_angular_vel (float): angular velocity of second rotor
-            x_pos (float, optional): x position of tip
-            y_pos (float, optional): y position of tip
-        """
+        """Custom method to set state with individual components"""
         if x_pos is not None and y_pos is not None:
             qpos = np.array([x_pos, y_pos, front_angle, rot1_angle, rot2_angle])
         else:
@@ -46,7 +33,6 @@ class SwimmerEnvStudy(SwimmerEnv):
                     rot2_angle,
                 ]
             )
-
         qvel = np.array(
             [
                 tip_vel_x,
@@ -56,8 +42,12 @@ class SwimmerEnvStudy(SwimmerEnv):
                 rot2_angular_vel,
             ]
         )
+        # Call the parent class's set_state method with the full arrays
+        super().set_state(qpos, qvel)
 
-        self.set_state(qpos, qvel)
+    def get_obs(self):
+        """Return current observation"""
+        return self._get_obs()
 
     def get_observation_space(self):
         """Returns bounds for observation space"""

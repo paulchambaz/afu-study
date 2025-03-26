@@ -6,7 +6,7 @@ import numpy as np
 
 
 class ContinuousMountainCarEnvStudy(Continuous_MountainCarEnv):
-    def set_state(self, car_position, car_velocity):
+    def _set_state(self, car_position, car_velocity):
         self.state = np.array([car_position, car_velocity], dtype=np.float32)
 
     def get_obs(self):

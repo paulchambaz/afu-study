@@ -34,7 +34,7 @@ class HybridPolicy(Experiment):
                     random_state = np.random.uniform(
                         low=obs_low * obs_scale_factor, high=obs_high * obs_scale_factor
                     )
-                    off_policy_env.unwrapped.set_state(*random_state)
+                    off_policy_env.unwrapped._set_state(*random_state)
                     state = off_policy_env.unwrapped.get_obs()
 
                     act_low, act_high = agent.train_env.unwrapped.get_action_space()

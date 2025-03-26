@@ -22,7 +22,7 @@ class RandomWalkPolicy(Experiment):
             random_state = np.random.uniform(
                 low=obs_low * obs_scale_factor, high=obs_high * obs_scale_factor
             )
-            agent.train_env.unwrapped.set_state(*random_state)
+            agent.train_env.unwrapped._set_state(*random_state)
             state = agent.train_env.unwrapped.get_obs()
 
             while True:
