@@ -11,7 +11,7 @@ plot *ARGS:
   python -m scripts.plot_results {{ARGS}}
 
 demo:
-  python -m scripts.demo --algo afu --env pendulum --episodes 2000 --weights ./weights/OffPolicy-AFU-PendulumStudy-v0-weights.pt
+  python -m scripts.demo --algo afu --env pendulum --episodes 2000 --weights ./weights/OnPolicy-AFU-PendulumStudy-v0-weights.pt
 
 dqn:
   python -m scripts.dqn_test --episodes 500
