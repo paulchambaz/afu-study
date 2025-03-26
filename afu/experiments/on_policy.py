@@ -26,7 +26,9 @@ class OnPolicy(Experiment):
 
                 agent.replay_buffer.push(state, action, reward, next_state, done)
 
+                # print(f"before update {training_steps}")
                 agent.update()
+                # print(f"after update {training_steps}")
 
                 state = next_state
                 agent.total_steps += 1

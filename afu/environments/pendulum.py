@@ -4,7 +4,7 @@ import numpy as np
 
 
 class PendulumEnvStudy(PendulumEnv):
-    def set_state(self, theta, theta_dot):
+    def _set_state(self, theta, theta_dot):
         self.state = (theta, theta_dot)
 
     def get_obs(self):
@@ -12,8 +12,7 @@ class PendulumEnvStudy(PendulumEnv):
         return np.array([np.cos(theta), np.sin(theta), thetadot], dtype=np.float32)
 
     def get_observation_space(self):
-        return (np.array([-np.pi, -8.0]), 
-                np.array([np.pi, 8.0]))
+        return (np.array([-np.pi, -8.0]), np.array([np.pi, 8.0]))
 
     def get_action_space(self):
         return (np.array([-2.0]), np.array([2.0]))
