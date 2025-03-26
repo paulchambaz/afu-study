@@ -84,11 +84,11 @@ def plot_histograms(experiment_results, colors_dict, experiment, env):
 
 def main():
     # algorithms = ["DDPG", "SAC", "AFU"]
-    algorithms = ["SAC", "AFU"]
-    # experiments = ["OffPolicy", "OnPolicy", "RandomWalkPolicy"]
-    experiments = ["OffPolicy"]
+    algorithms = ["SAC"]
+    # experiments = ["OffPolicy", "OnPolicy", "RandomWalkPolicy", "OptimalOffPolicy"]
+    experiments = ["OptimalOffPolicy"]
 
-    env = "Mountain Car"
+    env = "Lunar Lander"
     env_dict = {
         "Cartpole Continuous": "CartPoleContinuousStudy-v0",
         "Mountain Car": "MountainCarContinuousStudy-v0",

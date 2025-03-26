@@ -1,6 +1,6 @@
 run *ARGS:
-  python -m scripts.evaluate --algo sacopti --env lunarlander --experiment optimaloffpolicy --run 5 --steps 200000 --trials 0
-  python -m scripts.evaluate --algo sacopti --env pendulum --experiment optimaloffpolicy --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo afu --env lunarlander --experiment optimaloffpolicy --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo afu --env pendulum --experiment optimaloffpolicy --run 5 --steps 200000 --trials 0
 
 run-tiny:
   python -m scripts.evaluate --algo sacopti --env lunarlander --experiment optimaloffpolicy --run 1 --steps 1024 --trials 0
