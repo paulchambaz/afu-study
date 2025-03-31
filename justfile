@@ -1,8 +1,8 @@
 run *ARGS:
-  python -m scripts.evaluate --algo afu --env swimmer --experiment onpolicy --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo afu --env lunarlander --experiment offpolicynetwork --run 5 --steps 200000 --trials 0
 
 run-tiny:
-  python -m scripts.evaluate --algo afu --env swimmer --experiment onpolicy --run 1 --steps 1024 --trials 0
+  python -m scripts.evaluate --algo afu --env lunarlander --experiment offpolicynetwork --run 1 --steps 1024 --trials 0
 
 evaluate *ARGS:
   python -m scripts.evaluate {{ARGS}}
