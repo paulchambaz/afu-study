@@ -8,6 +8,7 @@ from afu.agents.sac_opti import SACOpti
 from afu.agents.afu_opti import AFUOpti
 
 from afu.agents.calql import CalQL
+from afu.agents.iql import IQL
 
 from afu.agents.afu_perrin import AFUPerrin
 
@@ -31,6 +32,7 @@ ALGORITHMS: dict[str, Any] = {
     "afu": AFU,
     "afuopti": AFUOpti,
     "afuperrin": AFUPerrin,
+    "iql": IQL,
     "calql": CalQL,
 }
 
@@ -42,6 +44,7 @@ ENVS: dict[str, str] = {
     "lunarlander": "LunarLanderContinuousStudy-v0",
     "swimmer": "SwimmerStudy-v0",
     "ant": "AntStudy-v0",
+    "antmaze": "AntMazeStudy-v0",
     "bipedalwalker": "BipedalWalkerStudy-v0",
 }
 

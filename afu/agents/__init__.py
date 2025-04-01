@@ -8,6 +8,7 @@ from . import dqn
 from . import sac
 from . import td3
 from . import calql
+from . import iql
 
 __all__ = [
     "memory",
@@ -20,4 +21,5 @@ __all__ = [
     "sac",
     "td3",
     "calql",
+    "iql",
 ]
