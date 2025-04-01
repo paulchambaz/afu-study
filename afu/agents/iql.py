@@ -1,16 +1,14 @@
-import copy
-
 from omegaconf import OmegaConf
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import numpy as np
+import gymnasium as gym
 
 from bbrl.agents import Agent  # type: ignore
 from bbrl_utils.nn import build_mlp  # type: ignore
 from bbrl.workspace import Workspace  # type: ignore
-from .memory import ReplayBuffer
 import math
 
 
@@ -128,27 +126,71 @@ class PolicyNetwork(Agent):
 class IQL(Agent):
     """Implicit Q-Learning (IQL) implementation."""
 
-    def __init__(self, qf, vf, policy, optimizer_factory, max_steps, tau, beta, discount=0.99, alpha=0.005):
+    def __init__(self, hyperparameters: OmegaConf):
         super().__init__()
-        self.qf = qf
-        self.q_target = copy.deepcopy(qf).requires_grad_(False)
-        self.q_target2 = copy.deepcopy(qf).requires_grad_(False)
-        self.vf = vf
-        self.policy = policy
+        self.params = hyperparameters
+        self.train_env = gym.make(self.params.env_name)
+
+        self.state_dim = self.train_env.observation_space.shape[0]
+        self.action_dim = self.train_env.action_space.shape[0]
+
+        hidden_dims = [self.params.hidden_size, self.params.hidden_size]
+
+        self.q_network1 = QNetwork(
+            state_dim=self.state_dim,
+            hidden_dims=hidden_dims,
+            action_dim=self.action_dim,
+            prefix="q1",
+        )
+
+        self.q_network2 = QNetwork(
+            state_dim=self.state_dim,
+            hidden_dims=hidden_dims,
+            action_dim=self.action_dim,
+            prefix="q2",
+        )
+
+        self.v_network = VNetwork(
+            state_dim=self.state_dim, hidden_dims=hidden_dims, prefix="v_target"
+        )
+
+        for target_param, param in zip(
+            self.v_network.parameters(), self.v_network.parameters()
+        ):
+            target_param.data.copy_(param.data)
+
+        # Policy network
+        self.policy_network = PolicyNetwork(
+            state_dim=self.state_dim,
+            hidden_dims=hidden_dims,
+            action_dim=self.action_dim,
+        )
 
         # Optimizers
-        self.v_optimizer = optimizer_factory(self.vf.parameters())
-        self.q_optimizer = optimizer_factory(self.qf.parameters())
-        self.policy_optimizer = optimizer_factory(self.policy.parameters())
+        self.q1_optimizer = torch.optim.Adam(
+            self.q_network1.parameters(), lr=self.params.q_lr
+        )
+        self.q2_optimizer = torch.optim.Adam(
+            self.q_network2.parameters(), lr=self.params.q_lr
+        )
+        self.v_optimizer = torch.optim.Adam(
+            self.v_network.parameters(), lr=self.params.v_lr
+        )
+        self.policy_optimizer = torch.optim.Adam(
+            self.policy_network.parameters(), lr=self.params.policy_lr
+        )
+        self.alpha_optimizer = torch.optim.Adam(
+            [self.log_alpha], lr=self.params.alpha_lr
+        )
 
         # Learning rate scheduler
-        self.policy_lr_schedule = CosineAnnealingLR(self.policy_optimizer, max_steps)
+        self.policy_lr_schedule = CosineAnnealingLR(self.policy_optimizer, self.params.max_steps)
 
         # Hyperparameters
-        self.tau = tau
-        self.beta = beta
-        self.discount = discount
-        self.alpha = alpha
+        self.tau = self.params.tau
+        self.beta = self.params.beta
+        self.discount = self.params.discount
+        self.alpha = self.params.alpha
         self.exp_adv_max = 100.
 
     def select_action(self, state: np.ndarray, evaluation: bool = False) -> np.ndarray:
@@ -165,59 +207,33 @@ class IQL(Agent):
             action = workspace.get("action", 0)
 
         return action.detach().numpy()[0]
-
-class IQL(Agent):
-    """Implicit Q-Learning (IQL) implementation."""
-
-    def __init__(self, qf1, qf2, vf, policy, optimizer_factory, max_steps, tau, beta, discount=0.99):
-        super().__init__()
-        self.qf1 = qf1
-        self.qf2 = qf2
-        self.q_target1 = copy.deepcopy(qf1).requires_grad_(False)
-        self.q_target2 = copy.deepcopy(qf2).requires_grad_(False)
-        self.vf = vf
-        self.policy = policy
-
-        self.replay_buffer = ReplayBuffer()
-        
-        self.v_optimizer = optimizer_factory(self.vf.parameters())
-        self.q_optimizer1 = optimizer_factory(self.qf1.parameters())
-        self.q_optimizer2 = optimizer_factory(self.qf2.parameters())
-        self.policy_optimizer = optimizer_factory(self.policy.parameters())
-
-        self.policy_lr_schedule = CosineAnnealingLR(self.policy_optimizer, max_steps)
-
-        self.tau = tau
-        self.beta = beta
-        self.discount = discount
-        self.exp_adv_max = 100.
-
-    def update_targets(self):
-        for param, target_param in zip(self.qf1.parameters(), self.q_target1.parameters()):
+    
+    def _update_targets(self):
+        for param, target_param in zip(self.q_network1.parameters(), self.q_network1.parameters()):
             target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
-        for param, target_param in zip(self.qf2.parameters(), self.q_target2.parameters()):
+        for param, target_param in zip(self.q_network2.parameters(), self.q_network2.parameters()):
             target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-    def compute_q_loss(self, states, actions, rewards, dones, next_states):
+    def _compute_q_loss(self, states, actions, rewards, dones, next_states):
         with torch.no_grad():
-            v_next = self.vf(next_states)
+            v_next = self.v_network.model(next_states).squeeze(-1)
             q_target = rewards + self.discount * (1 - dones) * v_next
-        q_values1 = self.qf1(states, actions)
-        q_values2 = self.qf2(states, actions)
+        q_values1 = self.q_network1.model(torch.cat([states, actions], dim=1)).squeeze(-1)
+        q_values2 = self.q_network2.model(torch.cat([states, actions], dim=1)).squeeze(-1)
         return F.mse_loss(q_values1, q_target) + F.mse_loss(q_values2, q_target)
 
-    def compute_v_loss(self, states):
+    def _compute_v_loss(self, states):
         with torch.no_grad():
             actions = self.policy.sample_action(states)
             q_values1 = self.q_target1(states, actions)
             q_values2 = self.q_target2(states, actions)
             q_values = torch.min(q_values1, q_values2)
-        v_values = self.vf(states)
+        v_values = self.v_network.model(states).squeeze(-1)
         adv = q_values - v_values
         weights = torch.where(adv >= 0, self.tau, 1 - self.tau)
         return (weights * adv.pow(2)).mean()
 
-    def compute_policy_loss(self, states, actions, adv):
+    def _compute_policy_loss(self, states, actions, adv):
         exp_adv = torch.clamp(torch.exp(adv * self.beta), max=self.exp_adv_max)
         log_probs = -F.mse_loss(self.policy.sample_action(states), actions, reduction='none').sum(dim=-1)
         return -(exp_adv * log_probs).mean()
@@ -230,20 +246,20 @@ class IQL(Agent):
             self.batch_size, continuous=True
         )
 
-        q_loss = self.compute_q_loss(states, actions, rewards, dones, next_states)
+        q_loss = self._compute_q_loss(states, actions, rewards, dones, next_states)
         self.q_optimizer1.zero_grad()
         self.q_optimizer2.zero_grad()
         q_loss.backward()
         self.q_optimizer1.step()
         self.q_optimizer2.step()
-        self.update_targets()
+        self._update_targets()
 
-        v_loss = self.compute_v_loss(states)
+        v_loss = self._compute_v_loss(states)
         self.v_optimizer.zero_grad()
         v_loss.backward()
         self.v_optimizer.step()
 
-        policy_loss = self.compute_policy_loss(states, actions, q_values - v_values)
+        policy_loss = self._compute_policy_loss(states, actions, q_loss - v_loss)
         self.policy_optimizer.zero_grad()
         policy_loss.backward()
         self.policy_optimizer.step()
@@ -297,21 +313,24 @@ class IQL(Agent):
         save_dict = torch.load(path)
 
         # Restore network states
-        self.qf.load_state_dict(save_dict["q_network_state"])
-        self.q_target.load_state_dict(save_dict["q_target_network_state"])
-        self.vf.load_state_dict(save_dict["v_network_state"])
-        self.policy.load_state_dict(save_dict["policy_network_state"])
+        self.q_network1.load_state_dict(save_dict["q_network_state"])
+        self.q_network2.load_state_dict(save_dict["q_target_network_state"])
+        self.policy_network.load_state_dict(save_dict["policy_network_state"])
+        self.v_network.load_state_dict(save_dict["v_network_state"])
 
         # Restore optimizer states
-        self.q_optimizer.load_state_dict(save_dict["q_optimizer_state"])
+        self.q1_optimizer.load_state_dict(save_dict["q1_optimizer_state"])
+        self.q2_optimizer.load_state_dict(save_dict["q2_optimizer_state"])
         self.v_optimizer.load_state_dict(save_dict["v_optimizer_state"])
         self.policy_optimizer.load_state_dict(save_dict["policy_optimizer_state"])
+        self.alpha_optimizer.load_state_dict(save_dict["alpha_optimizer_state"])
 
         # Restore other parameters
-        self.tau = save_dict["tau"]
-        self.beta = save_dict["beta"]
-        self.discount = save_dict["discount"]
-        self.alpha = save_dict["alpha"]
+        with torch.no_grad():
+            self.log_alpha.copy_(save_dict["log_alpha"])
+
+        # Restore other parameters
+        self.params = save_dict["params"]
 
     @classmethod
     def loadagent(cls, path: str) -> "IQL":
