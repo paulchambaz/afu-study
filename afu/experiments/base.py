@@ -123,17 +123,17 @@ class Experiment(ABC):
         results_filename = (
             f"results/{policy_type}-{algo_name}-{self.params.env_name}.pk"
         )
+        print(self.results)
         with open(results_filename, "wb") as f:
             pickle.dump(self.results, f)
         print(f"Results saved to {results_filename}")
-
-        agent = self.agent
 
         # Save agent weights
         weights_filename = (
             f"weights/{policy_type}-{algo_name}-{self.params.env_name}-weights.pt"
         )
-        torch.save(agent, weights_filename)
+        print(self.agent)
+        torch.save(self.agent, weights_filename)
         print(f"Agent weights saved to {weights_filename}")
 
     def send_to_influxdb(self, metrics) -> None:
