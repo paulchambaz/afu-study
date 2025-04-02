@@ -9,6 +9,7 @@ import gymnasium as gym
 from bbrl.agents import Agent  # type: ignore
 from bbrl_utils.nn import build_mlp  # type: ignore
 from bbrl.workspace import Workspace  # type: ignore
+from .memory import ReplayBuffer
 import math
 
 
@@ -166,6 +167,8 @@ class IQL(Agent):
             action_dim=self.action_dim,
         )
 
+        self.log_alpha = nn.Parameter(torch.zeros(1, requires_grad=True))
+
         # Optimizers
         self.q1_optimizer = torch.optim.Adam(
             self.q_network1.parameters(), lr=self.params.q_lr
@@ -183,15 +186,14 @@ class IQL(Agent):
             [self.log_alpha], lr=self.params.alpha_lr
         )
 
-        # Learning rate scheduler
-        self.policy_lr_schedule = CosineAnnealingLR(self.policy_optimizer, self.params.max_steps)
-
         # Hyperparameters
+        self.replay_buffer = ReplayBuffer(self.params.replay_size)
+        self.batch_size = self.params.batch_size
         self.tau = self.params.tau
         self.beta = self.params.beta
-        self.discount = self.params.discount
-        self.alpha = self.params.alpha
+        self.gamma = self.params.gamma
         self.exp_adv_max = 100.
+        self.total_steps = 0
 
     def select_action(self, state: np.ndarray, evaluation: bool = False) -> np.ndarray:
         workspace = Workspace()
@@ -217,14 +219,14 @@ class IQL(Agent):
     def _compute_q_loss(self, states, actions, rewards, dones, next_states):
         with torch.no_grad():
             v_next = self.v_network.model(next_states).squeeze(-1)
-            q_target = rewards + self.discount * (1 - dones) * v_next
+            q_target = rewards + self.gamma * (1 - dones) * v_next
         q_values1 = self.q_network1.model(torch.cat([states, actions], dim=1)).squeeze(-1)
         q_values2 = self.q_network2.model(torch.cat([states, actions], dim=1)).squeeze(-1)
         return F.mse_loss(q_values1, q_target) + F.mse_loss(q_values2, q_target)
 
     def _compute_v_loss(self, states):
         with torch.no_grad():
-            actions = self.policy.sample_action(states)
+            actions = self.policy_network.sample_action(states, t=0)
             q_values1 = self.q_target1(states, actions)
             q_values2 = self.q_target2(states, actions)
             q_values = torch.min(q_values1, q_values2)
@@ -235,7 +237,7 @@ class IQL(Agent):
 
     def _compute_policy_loss(self, states, actions, adv):
         exp_adv = torch.clamp(torch.exp(adv * self.beta), max=self.exp_adv_max)
-        log_probs = -F.mse_loss(self.policy.sample_action(states), actions, reduction='none').sum(dim=-1)
+        log_probs = -F.mse_loss(self.policy_network.sample_action(states, t=0), actions, reduction='none').sum(dim=-1)
         return -(exp_adv * log_probs).mean()
 
     def update(self):
@@ -247,11 +249,11 @@ class IQL(Agent):
         )
 
         q_loss = self._compute_q_loss(states, actions, rewards, dones, next_states)
-        self.q_optimizer1.zero_grad()
-        self.q_optimizer2.zero_grad()
+        self.q1_optimizer.zero_grad()
+        self.q2_optimizer.zero_grad()
         q_loss.backward()
-        self.q_optimizer1.step()
-        self.q_optimizer2.step()
+        self.q1_optimizer.step()
+        self.q2_optimizer.step()
         self._update_targets()
 
         v_loss = self._compute_v_loss(states)
@@ -263,7 +265,6 @@ class IQL(Agent):
         self.policy_optimizer.zero_grad()
         policy_loss.backward()
         self.policy_optimizer.step()
-        self.policy_lr_schedule.step()
 
     def _compute_alpha_loss(self, states: torch.Tensor) -> torch.Tensor:
         """
@@ -301,7 +302,7 @@ class IQL(Agent):
             # Other parameters
             "tau": self.tau,
             "beta": self.beta,
-            "discount": self.discount,
+            "gamma": self.gamma,
             "alpha": self.alpha,
         }
 
@@ -350,7 +351,7 @@ class IQL(Agent):
                 "alpha_lr": 3e-4,
                 "replay_size": 100_000,
                 "batch_size": 256,
-                "tau": 0.01,
+                "tau": 0.99,
                 "beta": 3.0,
                 "gamma": 0.99,
             }
