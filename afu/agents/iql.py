@@ -2,7 +2,6 @@ from omegaconf import OmegaConf
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.optim.lr_scheduler import CosineAnnealingLR
 import numpy as np
 import gymnasium as gym
 
@@ -216,29 +215,90 @@ class IQL(Agent):
         for param, target_param in zip(self.q_network2.parameters(), self.q_network2.parameters()):
             target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-    def _compute_q_loss(self, states, actions, rewards, dones, next_states):
-        with torch.no_grad():
-            v_next = self.v_network.model(next_states).squeeze(-1)
-            q_target = rewards + self.gamma * (1 - dones) * v_next
-        q_values1 = self.q_network1.model(torch.cat([states, actions], dim=1)).squeeze(-1)
-        q_values2 = self.q_network2.model(torch.cat([states, actions], dim=1)).squeeze(-1)
-        return F.mse_loss(q_values1, q_target) + F.mse_loss(q_values2, q_target)
-
     def _compute_v_loss(self, states):
-        with torch.no_grad():
-            actions = self.policy_network.sample_action(states, t=0)
-            q_values1 = self.q_target1(states, actions)
-            q_values2 = self.q_target2(states, actions)
-            q_values = torch.min(q_values1, q_values2)
-        v_values = self.v_network.model(states).squeeze(-1)
+        v_workspace = Workspace()
+        v_workspace.set("env/env_obs", 0, states)
+        self.v_network(v_workspace, t=0)
+        v_values = v_workspace.get("v/v_value", 0)
+
+        policy_workspace = Workspace()
+        policy_workspace.set("env/env_obs", 0, states)
+        self.policy_network(policy_workspace, t=0)
+        self.policy_network.sample_action(policy_workspace, t=0)
+        actions = policy_workspace.get("action", 0)
+
+        q1_workspace = Workspace()
+        q1_workspace.set("env/env_obs", 0, states)
+        q1_workspace.set("action", 0, actions)
+        self.q_network1(q1_workspace, t=0)
+        q1_values = q1_workspace.get("q1/q_value", 0)
+
+        q2_workspace = Workspace()
+        q2_workspace.set("env/env_obs", 0, states)
+        q2_workspace.set("action", 0, actions)
+        self.q_network2(q2_workspace, t=0)
+        q2_values = q2_workspace.get("q2/q_value", 0)
+
+        q_values = torch.min(q1_values, q2_values)
         adv = q_values - v_values
         weights = torch.where(adv >= 0, self.tau, 1 - self.tau)
-        return (weights * adv.pow(2)).mean()
+        v_loss = (weights * adv.pow(2)).mean()
 
-    def _compute_policy_loss(self, states, actions, adv):
-        exp_adv = torch.clamp(torch.exp(adv * self.beta), max=self.exp_adv_max)
-        log_probs = -F.mse_loss(self.policy_network.sample_action(states, t=0), actions, reduction='none').sum(dim=-1)
-        return -(exp_adv * log_probs).mean()
+        return v_loss
+
+    def _compute_q_loss(self, states, actions, rewards, next_states, dones):
+        q1_workspace = Workspace()
+        q1_workspace.set("env/env_obs", 0, states)
+        q1_workspace.set("action", 0, actions)
+        self.q_network1(q1_workspace, t=0)
+        q1_values = q1_workspace.get("q1/q_value", 0)
+
+        q2_workspace = Workspace()
+        q2_workspace.set("env/env_obs", 0, states)
+        q2_workspace.set("action", 0, actions)
+        self.q_network2(q2_workspace, t=0)
+        q2_values = q2_workspace.get("q2/q_value", 0)
+
+        v_workspace = Workspace()
+        v_workspace.set("env/env_obs", 0, next_states)
+        self.v_network(v_workspace, t=0)
+        v_next_values = v_workspace.get("v/v_value", 0)
+
+        q_target = rewards + (1 - dones) * v_next_values
+        q_loss = ((q1_values - q_target.detach()).pow(2) + (q2_values - q_target.detach()).pow(2)).mean()
+
+        return q_loss
+
+    def _compute_policy_loss(self, states):
+        policy_workspace = Workspace()
+        policy_workspace.set("env/env_obs", 0, states)
+        self.policy_network(policy_workspace, t=0)
+        self.policy_network.sample_action(policy_workspace, t=0)
+        actions = policy_workspace.get("action", 0)
+
+        q1_workspace = Workspace()
+        q1_workspace.set("env/env_obs", 0, states)
+        q1_workspace.set("action", 0, actions)
+        self.q_network1(q1_workspace, t=0)
+        q1_values = q1_workspace.get("q1/q_value", 0)
+
+        q2_workspace = Workspace()
+        q2_workspace.set("env/env_obs", 0, states)
+        q2_workspace.set("action", 0, actions)
+        self.q_network2(q2_workspace, t=0)
+        q2_values = q2_workspace.get("q2/q_value", 0)
+
+        q_values = torch.min(q1_values, q2_values)
+        v_workspace = Workspace()
+        v_workspace.set("env/env_obs", 0, states)
+        self.v_network(v_workspace, t=0)
+        v_values = v_workspace.get("v/v_value", 0)
+
+        adv = q_values - v_values
+        exp_adv = torch.exp(adv / self.log_alpha.exp().detach())
+        policy_loss = -(exp_adv.mean())
+
+        return policy_loss
 
     def update(self):
         if len(self.replay_buffer) < self.batch_size:
@@ -256,7 +316,7 @@ class IQL(Agent):
         self.q2_optimizer.step()
         self._update_targets()
 
-        v_loss = self._compute_v_loss(states)
+        v_loss = self._compute_v_loss(states, actions, rewards, next_states, dones)
         self.v_optimizer.zero_grad()
         v_loss.backward()
         self.v_optimizer.step()
