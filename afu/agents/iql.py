@@ -126,7 +126,7 @@ class PolicyNetwork(Agent):
 class IQL(Agent):
     """Implicit Q-Learning (IQL) implementation."""
 
-    def __init__(self, hyperparameters: OmegaConf):
+    def __init__(self, hyperparameters: OmegaConf, optimal_model: dict):
         super().__init__()
         self.params = hyperparameters
         self.train_env = gym.make(self.params.env_name)
@@ -150,12 +150,18 @@ class IQL(Agent):
             prefix="q2",
         )
 
+        # Value networks
         self.v_network = VNetwork(
+            state_dim=self.state_dim, hidden_dims=hidden_dims, prefix="v"
+        )
+
+        # Value target networks
+        self.v_target_network = VNetwork(
             state_dim=self.state_dim, hidden_dims=hidden_dims, prefix="v_target"
         )
 
         for target_param, param in zip(
-            self.v_network.parameters(), self.v_network.parameters()
+            self.v_target_network.parameters(), self.v_network.parameters()
         ):
             target_param.data.copy_(param.data)
 
@@ -225,6 +231,7 @@ class IQL(Agent):
         policy_workspace.set("env/env_obs", 0, states)
         self.policy_network(policy_workspace, t=0)
         self.policy_network.sample_action(policy_workspace, t=0)
+        self.policy_network.get_log_prob(policy_workspace, t=0)
         actions = policy_workspace.get("action", 0)
 
         q1_workspace = Workspace()
@@ -241,8 +248,9 @@ class IQL(Agent):
 
         q_values = torch.min(q1_values, q2_values)
         adv = q_values - v_values
-        weights = torch.where(adv >= 0, self.tau, 1 - self.tau)
-        v_loss = (weights * adv.pow(2)).mean()
+        # weights = torch.where(adv >= 0, self.tau, 1 - self.tau)
+        # v_loss = (weights * adv.pow(2)).mean()
+        v_loss = torch.mean(torch.abs(self.tau - (adv < 0).float()) * adv**2)
 
         return v_loss
 
@@ -259,15 +267,17 @@ class IQL(Agent):
         self.q_network2(q2_workspace, t=0)
         q2_values = q2_workspace.get("q2/q_value", 0)
 
-        v_workspace = Workspace()
-        v_workspace.set("env/env_obs", 0, next_states)
-        self.v_network(v_workspace, t=0)
-        v_next_values = v_workspace.get("v/v_value", 0)
+        target_workspace = Workspace()
+        target_workspace.set("env/env_obs", 0, next_states)
+        self.v_target_network(target_workspace, t=0)
+        v_targets = target_workspace.get("v_target/v_value", 0)
 
-        q_target = rewards + (1 - dones) * v_next_values
-        q_loss = ((q1_values - q_target.detach()).pow(2) + (q2_values - q_target.detach()).pow(2)).mean()
+        q_target = rewards + (1 - dones) * v_targets
+        # q_loss = ((q1_values - q_target.detach()).pow(2) + (q2_values - q_target.detach()).pow(2)).mean()
+        q1_loss = F.mse_loss(q1_values, q_target.detach())
+        q2_loss = F.mse_loss(q2_values, q_target.detach())
 
-        return q_loss
+        return q1_loss, q2_loss
 
     def _compute_policy_loss(self, states):
         policy_workspace = Workspace()
@@ -292,7 +302,7 @@ class IQL(Agent):
         v_workspace = Workspace()
         v_workspace.set("env/env_obs", 0, states)
         self.v_network(v_workspace, t=0)
-        v_values = v_workspace.get("v/v_value", 0)
+        v_values = v_workspace.get("v_target/v_value", 0)
 
         adv = q_values - v_values
         exp_adv = torch.exp(adv / self.log_alpha.exp().detach())
@@ -308,10 +318,11 @@ class IQL(Agent):
             self.batch_size, continuous=True
         )
 
-        q_loss = self._compute_q_loss(states, actions, rewards, dones, next_states)
+        q1_loss, q2_loss = self._compute_q_loss(states, actions, rewards, dones, next_states)
         self.q1_optimizer.zero_grad()
         self.q2_optimizer.zero_grad()
-        q_loss.backward()
+        q1_loss.backward()
+        q2_loss.backward()
         self.q1_optimizer.step()
         self.q2_optimizer.step()
         self._update_targets()
@@ -321,10 +332,19 @@ class IQL(Agent):
         v_loss.backward()
         self.v_optimizer.step()
 
+        # Soft update of targets network
+        self._soft_update(self.v_network, self.v_target_network)
+
         policy_loss = self._compute_policy_loss(states, actions, q_loss - v_loss)
         self.policy_optimizer.zero_grad()
         policy_loss.backward()
         self.policy_optimizer.step()
+
+        # Update alpha parameter
+        alpha_loss = self._compute_alpha_loss(states)
+        self.alpha_optimizer.zero_grad()
+        alpha_loss.backward()
+        self.alpha_optimizer.step()
 
     def _compute_alpha_loss(self, states: torch.Tensor) -> torch.Tensor:
         """
@@ -347,23 +367,34 @@ class IQL(Agent):
         alpha_loss = (-alpha * (log_probs + self.target_entropy)).mean()
 
         return alpha_loss
+    
+    def _soft_update(
+        self, source_network: nn.Module, target_network: nn.Module
+    ) -> None:
+        """Perform soft update of target network parameters."""
+        for target_param, source_param in zip(
+            target_network.parameters(), source_network.parameters()
+        ):
+            target_param.data.copy_(
+                (1 - self.tau) * target_param.data + self.tau * source_param.data
+            )
 
     def get_weights(self) -> dict:
         return {
             # Network states
-            "q_network_state": self.qf.state_dict(),
-            "q_target_network_state": self.q_target.state_dict(),
-            "v_network_state": self.vf.state_dict(),
-            "policy_network_state": self.policy.state_dict(),
+            "q_network1_state": self.q_network1.state_dict(),
+            "q_network2_state": self.q_network2.state_dict(),
+            "v_network_state": self.v_network.state_dict(),
+            "v_target_network_state": self.v_target_network.state_dict(),
+            "policy_network_state": self.policy_network.state_dict(),
             # Optimizer states
-            "q_optimizer_state": self.q_optimizer.state_dict(),
+            "q1_optimizer_state": self.q1_optimizer.state_dict(),
+            "q2_optimizer_state": self.q2_optimizer.state_dict(),
             "v_optimizer_state": self.v_optimizer.state_dict(),
             "policy_optimizer_state": self.policy_optimizer.state_dict(),
+            "alpha_optimizer_state": self.alpha_optimizer.state_dict(),
             # Other parameters
-            "tau": self.tau,
-            "beta": self.beta,
-            "gamma": self.gamma,
-            "alpha": self.alpha,
+            "params": self.params,
         }
 
     def save(self, path: str) -> None:
@@ -374,10 +405,11 @@ class IQL(Agent):
         save_dict = torch.load(path)
 
         # Restore network states
-        self.q_network1.load_state_dict(save_dict["q_network_state"])
-        self.q_network2.load_state_dict(save_dict["q_target_network_state"])
-        self.policy_network.load_state_dict(save_dict["policy_network_state"])
+        self.q_network1.load_state_dict(save_dict["q_network1_state"])
+        self.q_network2.load_state_dict(save_dict["q_network2_state"])
         self.v_network.load_state_dict(save_dict["v_network_state"])
+        self.v_target_network.load_state_dict(save_dict["v_target_network_state"])
+        self.policy_network.load_state_dict(save_dict["policy_network_state"])
 
         # Restore optimizer states
         self.q1_optimizer.load_state_dict(save_dict["q1_optimizer_state"])
@@ -411,7 +443,7 @@ class IQL(Agent):
                 "alpha_lr": 3e-4,
                 "replay_size": 100_000,
                 "batch_size": 256,
-                "tau": 0.99,
+                "tau": 0.01,
                 "beta": 3.0,
                 "gamma": 0.99,
             }
