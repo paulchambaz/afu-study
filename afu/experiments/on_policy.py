@@ -5,7 +5,7 @@ from tqdm import tqdm  # type: ignore
 class OnPolicy(Experiment):
     def run(self, i, shared_results, results_lock):
         training_steps = 0
-        agent = self.algo(self.hyperparameters)
+        agent = self.algo(self.hyperparameters, {})
 
         progress = tqdm(
             range(self.params.total_steps),
