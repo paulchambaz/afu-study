@@ -2,7 +2,7 @@
 #import "@preview/cetz:0.3.1": canvas, draw
 
 #show: report.with(
-title: [Compte Rendu de Réunion 6],
+title: [Compte Rendu de Réunion 7],
 course: [Projet #smallcaps[Ai2d]],
 authors: ("Paul Chambaz", "Frédéric Li Combeau"),
 university: [Sorbonne Université],

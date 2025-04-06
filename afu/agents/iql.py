@@ -214,14 +214,8 @@ class IQL(Agent):
             action = workspace.get("action", 0)
 
         return action.detach().numpy()[0]
-    
-    def _update_targets(self):
-        for param, target_param in zip(self.q_network1.parameters(), self.q_network1.parameters()):
-            target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
-        for param, target_param in zip(self.q_network2.parameters(), self.q_network2.parameters()):
-            target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-    def _compute_v_loss(self, states):
+    def _compute_v_loss(self, states, actions, rewards, next_states, dones):
         v_workspace = Workspace()
         v_workspace.set("env/env_obs", 0, states)
         self.v_network(v_workspace, t=0)
@@ -302,7 +296,7 @@ class IQL(Agent):
         v_workspace = Workspace()
         v_workspace.set("env/env_obs", 0, states)
         self.v_network(v_workspace, t=0)
-        v_values = v_workspace.get("v_target/v_value", 0)
+        v_values = v_workspace.get("v/v_value", 0)
 
         adv = q_values - v_values
         exp_adv = torch.exp(adv / self.log_alpha.exp().detach())
@@ -315,17 +309,17 @@ class IQL(Agent):
             return
 
         states, actions, rewards, next_states, dones = self.replay_buffer.sample(
-            self.batch_size, continuous=True
+            self.batch_size,
+            continuous=True
         )
 
-        q1_loss, q2_loss = self._compute_q_loss(states, actions, rewards, dones, next_states)
+        q1_loss, q2_loss = self._compute_q_loss(states, actions, rewards, next_states, dones)
         self.q1_optimizer.zero_grad()
         self.q2_optimizer.zero_grad()
         q1_loss.backward()
         q2_loss.backward()
         self.q1_optimizer.step()
         self.q2_optimizer.step()
-        self._update_targets()
 
         v_loss = self._compute_v_loss(states, actions, rewards, next_states, dones)
         self.v_optimizer.zero_grad()
@@ -335,16 +329,16 @@ class IQL(Agent):
         # Soft update of targets network
         self._soft_update(self.v_network, self.v_target_network)
 
-        policy_loss = self._compute_policy_loss(states, actions, q_loss - v_loss)
+        policy_loss = self._compute_policy_loss(states)
         self.policy_optimizer.zero_grad()
         policy_loss.backward()
         self.policy_optimizer.step()
 
         # Update alpha parameter
-        alpha_loss = self._compute_alpha_loss(states)
-        self.alpha_optimizer.zero_grad()
-        alpha_loss.backward()
-        self.alpha_optimizer.step()
+        # alpha_loss = self._compute_alpha_loss(states)
+        # self.alpha_optimizer.zero_grad()
+        # alpha_loss.backward()
+        # self.alpha_optimizer.step()
 
     def _compute_alpha_loss(self, states: torch.Tensor) -> torch.Tensor:
         """
@@ -440,10 +434,10 @@ class IQL(Agent):
                 "q_lr": 3e-4,
                 "v_lr": 3e-4,
                 "policy_lr": 3e-4,
-                "alpha_lr": 3e-4,
+                "alpha_lr": 0.005,
                 "replay_size": 100_000,
                 "batch_size": 256,
-                "tau": 0.01,
+                "tau": 0.9,
                 "beta": 3.0,
                 "gamma": 0.99,
             }
