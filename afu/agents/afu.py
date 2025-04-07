@@ -29,10 +29,7 @@ class QNetwork(Agent):
         state_action = torch.cat([obs, action], dim=1)
 
         # compute Q-value
-        print("before q compute")
-        print(f"state action (shape={state_action.shape}): {state_action}")
         q_value = self.model(state_action).squeeze(-1)
-        print("after q compute")
         self.set(("q_value", t), q_value)
 
 
@@ -52,10 +49,7 @@ class VNetwork(Agent):
         obs = self.get(("env/env_obs", t))
 
         # compute V-value
-        print("before v compute")
-        print(f"obs (shape={obs.shape}): {obs}")
         v_value = self.model(obs).squeeze(-1)
-        print("after v compute")
         self.set((f"{self.prefix}/v_value", t), v_value)
 
 
@@ -80,10 +74,7 @@ class ANetwork(Agent):
         state_action = torch.cat([obs, action], dim=1)
 
         # compute A-value
-        print("before a compute")
-        print(f"state action (shape={state_action.shape}): {state_action}")
         a_value = self.model(state_action).squeeze(-1)
-        print("after a compute")
         self.set((f"{self.prefix}/a_value", t), a_value)
 
 
@@ -108,10 +99,7 @@ class PolicyNetwork(Agent):
         obs = self.get(("env/env_obs", t))
 
         # compute mean from the network
-        print("before policy compute")
-        print(f"obs (shape={obs.shape}): {obs}")
         mean = self.model(obs)
-        print("after policy compute")
         log_std = self.log_std.expand_as(mean)
         log_std = torch.clamp(log_std, self.log_std_min, self.log_std_max)
 
@@ -284,15 +272,11 @@ class AFU:
             continuous=True,
         )
 
-        print("sampled from replay buffer")
-
         # Update Q-network
         q_loss = self._compute_q_loss(states, actions, rewards, next_states, dones)
         self.q_optimizer.zero_grad()
         q_loss.backward()
         self.q_optimizer.step()
-
-        print("updated q-network")
 
         # Update V-network 1 and A-network 1
         va_loss1 = self._compute_va_loss(
@@ -304,8 +288,6 @@ class AFU:
         self.v1_optimizer.step()
         self.a1_optimizer.step()
 
-        print("updated v and a networks 1")
-
         # Update V-network 1 and A-network 2
         va_loss2 = self._compute_va_loss(
             states, actions, rewards, next_states, dones, network_idx=2
@@ -316,13 +298,9 @@ class AFU:
         self.v2_optimizer.step()
         self.a2_optimizer.step()
 
-        print("updated v and a networks 2")
-
         # Soft update of targets network
         self._soft_update(self.v_network1, self.v_target_network1)
         self._soft_update(self.v_network2, self.v_target_network2)
-
-        print("updated target v networks 1 and 2")
 
         # Update policy network
         policy_loss = self._compute_policy_loss(states)
@@ -330,15 +308,11 @@ class AFU:
         policy_loss.backward()
         self.policy_optimizer.step()
 
-        print("updated policy network")
-
         # Update alpha parameter
         alpha_loss = self._compute_alpha_loss(states)
         self.alpha_optimizer.zero_grad()
         alpha_loss.backward()
         self.alpha_optimizer.step()
-
-        print("updated alpha parameter")
 
     def _compute_va_loss(
         self,
