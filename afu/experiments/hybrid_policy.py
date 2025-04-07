@@ -5,8 +5,10 @@ import gymnasium as gym
 
 
 class HybridPolicy(Experiment):
-    def run(self, i, shared_results, results_lock):
-        epsilons = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    def run(self, i, shared_results, results_lock, manager):
+        # epsilons = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        # epsilons = [0.0, 0.25, 0.5, 0.75, 1.0]
+        epsilons = [0.3]
         obs_scale_factor = 1.0
 
         for epsilon in epsilons:
@@ -82,7 +84,7 @@ class HybridPolicy(Experiment):
 
                     with results_lock:
                         if epsilon not in shared_results["rewards"]:
-                            shared_results["rewards"][epsilon] = {}
+                            shared_results["rewards"][epsilon] = manager.dict()
 
                         if id not in shared_results["rewards"][epsilon]:
                             shared_results["rewards"][epsilon][id] = eval_results
@@ -102,5 +104,5 @@ class HybridPolicy(Experiment):
 
             with results_lock:
                 if "agent" not in shared_results:
-                    shared_results["agent"] = {}
+                    shared_results["agent"] = manager.dict()
                 shared_results["agent"][epsilon] = agent.get_weights()

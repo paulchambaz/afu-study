@@ -4,7 +4,7 @@ from tqdm import tqdm  # type: ignore
 
 
 class OffPolicy(Experiment):
-    def run(self, i, shared_results, results_lock):
+    def run(self, i, shared_results, results_lock, manager):
         obs_scale_factor = 1.0
 
         training_steps = 0
