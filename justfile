@@ -1,6 +1,5 @@
 run *ARGS:
-  # python -m scripts.evaluate --algo afu --env lunarlander --experiment offpolicynetwork --run 5 --steps 200000 --trials 0
-  python -m scripts.evaluate --algo afu --env pendulum --experiment hybridpolicy --run 1 --steps 300000 --trials 0
+  python -m scripts.evaluate --algo afu --env lunarlander --experiment offpolicy --run 5 --steps 1000000 --trials 0
 
 run-tiny:
   python -m scripts.evaluate --algo afu --env lunarlander --experiment hybridpolicy --run 1 --steps 400 --trials 0
