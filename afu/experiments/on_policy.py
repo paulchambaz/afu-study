@@ -3,7 +3,7 @@ from tqdm import tqdm  # type: ignore
 
 
 class OnPolicy(Experiment):
-    def run(self, i, shared_results, results_lock):
+    def run(self, i, shared_results, results_lock, manager):
         training_steps = 0
         agent = self.algo(self.hyperparameters)
 
