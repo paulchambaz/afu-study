@@ -52,6 +52,7 @@ class OfflineOnlineTransition(Experiment):
 
         # TODO: we have to decide if we want to empty the replay buffer at this point
         # if we do we should also reset the total steps
+        # Cal-QL: keep the replay buffer
 
         while training_step < self.params.total_steps:
             state, _ = agent.train_env.reset()
