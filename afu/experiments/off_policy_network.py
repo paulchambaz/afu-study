@@ -4,8 +4,8 @@ from tqdm import tqdm  # type: ignore
 
 
 class OffPolicyNetwork(Experiment):
-    def run(self, i, shared_results, results_lock):
-        networks = [32, 128, 512, 1024, 2048]
+    def run(self, i, shared_results, results_lock, manager):
+        networks = [128, 512, 1024, 2048]
         obs_scale_factor = 1.0
 
         for network in networks:

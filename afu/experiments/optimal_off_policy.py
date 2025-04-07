@@ -5,7 +5,7 @@ from tqdm import tqdm  # type: ignore
 
 
 class OptimalOffPolicy(Experiment):
-    def run(self, i, shared_results, results_lock):
+    def run(self, i, shared_results, results_lock, manager):
         algo_name_short = self.algo.__name__.lower()
 
         if "afu" in algo_name_short:

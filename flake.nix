@@ -1,6 +1,7 @@
 {
+  description = "Afu study dev environment";
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
     flake-utils.url = "github:numtide/flake-utils";
   };
   outputs = {
@@ -45,29 +46,25 @@
           pythonImportsCheck = ["bbrl"];
         };
 
-        bbrl_gymnasium = pythonPackages.buildPythonPackage rec {
-          pname = "bbrl-gymnasium"; # Note: use hyphen in pname
+        bbrl_gymnasium = pythonPackages.buildPythonPackage {
+          pname = "bbrl-gymnasium";
           version = "0.3.7";
           format = "setuptools";
-
           src = pkgs.fetchurl {
             url = "https://files.pythonhosted.org/packages/38/7f/86991c0690b7d14a7ccf29f99167465f444c3157b701cf7adcdfd598383a/bbrl_gymnasium-0.3.7.tar.gz";
             sha256 = "sha256-ojjaJ2TPyYfl5gYQvwfDKqbZjfwvcKAkRztYykWQrEc=";
           };
-
           propagatedBuildInputs = with pythonPackages; [
             numpy
             gymnasium
             bbrl
             setuptools
           ];
-
           doCheck = false;
-          pythonImportsCheck = ["bbrl_gymnasium"]; # Add this to ensure the package is importable
         };
 
         bbrl_utils = pythonPackages.buildPythonPackage rec {
-          pname = "bbrl-utils"; # Note: use hyphen in pname
+          pname = "bbrl-utils";
           version = "0.10.3";
           format = "pyproject";
 
@@ -94,9 +91,7 @@
             export SETUPTOOLS_SCM_PRETEND_VERSION="${version}"
           '';
 
-          dontCheckRuntimeDeps = true;
           doCheck = false;
-          pythonImportsCheck = ["bbrl_utils"];
         };
 
         mazemdp = pythonPackages.buildPythonPackage rec {
@@ -156,7 +151,6 @@
             jupyter-server
             widgetsnbextension
             ipywidgets
-            anywidget
           ];
 
           prePatch = ''
@@ -286,7 +280,6 @@
           qtpy
           gymnasium
           pybox2d
-          pythonPackages.mujoco
           bbrl
           bbrl_utils
           bbrl_gymnasium
@@ -358,7 +351,6 @@
             export QT_QPA_PLATFORM=xcb
             export QT_QPA_PLATFORM_PLUGIN_PATH="${pkgs.qt6.qtbase}/lib/qt-${pkgs.qt6.qtbase.version}/plugins"
             export LD_LIBRARY_PATH="${pkgs.qt6.qtbase}/lib:${pkgs.libglvnd}/lib:$LD_LIBRARY_PATH"
-            export PYGAME_DETECT_AVX2=1
           '';
         };
       }

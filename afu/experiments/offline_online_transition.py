@@ -3,7 +3,7 @@ import numpy as np
 
 
 class OfflineOnlineTransition(Experiment):
-    def run(self, j, shared_results, results_lock):
+    def run(self, j, shared_results, results_lock, manager):
         agent = self.algo(self.hyperparameters)
 
         dataset = agent.train_env.unwrapped.dataset

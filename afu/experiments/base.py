@@ -113,7 +113,6 @@ class Experiment(ABC):
             self.results[key][step] = value
 
     def save_results(self) -> None:
-        print("Saving results")
         Path("results").mkdir(exist_ok=True)
         Path("weights").mkdir(exist_ok=True)
         policy_type = self.__class__.__name__
@@ -127,13 +126,11 @@ class Experiment(ABC):
             pickle.dump(self.results, f)
         print(f"Results saved to {results_filename}")
 
-        agent = self.agent
-
         # Save agent weights
         weights_filename = (
             f"weights/{policy_type}-{algo_name}-{self.params.env_name}-weights.pt"
         )
-        torch.save(agent, weights_filename)
+        torch.save(self.agent, weights_filename)
         print(f"Agent weights saved to {weights_filename}")
 
     def send_to_influxdb(self, metrics) -> None:
@@ -161,7 +158,9 @@ class Experiment(ABC):
 
         processes = []
         for i in range(n_runs):
-            p = mp.Process(target=self.run, args=(i, shared_results, results_lock))
+            p = mp.Process(
+                target=self.run, args=(i, shared_results, results_lock, manager)
+            )
             processes.append(p)
             p.start()
 
