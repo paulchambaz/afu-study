@@ -188,9 +188,6 @@ class IQL(Agent):
         self.policy_optimizer = torch.optim.Adam(
             self.policy_network.parameters(), lr=self.params.policy_lr
         )
-        self.alpha_optimizer = torch.optim.Adam(
-            [self.log_alpha], lr=self.params.alpha_lr
-        )
 
         # Hyperparameters
         self.replay_buffer = ReplayBuffer(self.params.replay_size)
@@ -316,7 +313,9 @@ class IQL(Agent):
 
         adv = q_values - v_values
         exp_adv = torch.exp(self.beta * adv)
-        policy_loss = torch.mean(exp_adv * actions)
+        policy_loss = torch.mean(
+            exp_adv * policy_workspace.get("log_prob", 0)
+        )
 
         return policy_loss
 
@@ -375,7 +374,6 @@ class IQL(Agent):
             "q2_optimizer_state": self.q2_optimizer.state_dict(),
             "v_optimizer_state": self.v_optimizer.state_dict(),
             "policy_optimizer_state": self.policy_optimizer.state_dict(),
-            "alpha_optimizer_state": self.alpha_optimizer.state_dict(),
             # Other parameters
             "params": self.params,
         }
@@ -399,7 +397,6 @@ class IQL(Agent):
         self.q2_optimizer.load_state_dict(save_dict["q2_optimizer_state"])
         self.v_optimizer.load_state_dict(save_dict["v_optimizer_state"])
         self.policy_optimizer.load_state_dict(save_dict["policy_optimizer_state"])
-        self.alpha_optimizer.load_state_dict(save_dict["alpha_optimizer_state"])
 
         # Restore other parameters
         with torch.no_grad():
