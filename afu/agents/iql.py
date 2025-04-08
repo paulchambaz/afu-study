@@ -198,7 +198,6 @@ class IQL(Agent):
         self.tau = self.params.tau
         self.beta = self.params.beta
         self.gamma = self.params.gamma
-        self.exp_adv_max = 100.
         self.total_steps = 0
 
     def select_action(self, state: np.ndarray, evaluation: bool = False) -> np.ndarray:
@@ -294,6 +293,7 @@ class IQL(Agent):
         policy_workspace.set("env/env_obs", 0, states)
         self.policy_network(policy_workspace, t=0)
         self.policy_network.sample_action(policy_workspace, t=0)
+        self.policy_network.get_log_prob(policy_workspace, t=0)
         actions = policy_workspace.get("action", 0)
 
         q1_workspace = Workspace()
@@ -316,7 +316,7 @@ class IQL(Agent):
 
         adv = q_values - v_values
         exp_adv = torch.exp(self.beta * adv)
-        policy_loss = torch.mean(exp_adv * self.log_alpha.exp())
+        policy_loss = torch.mean(exp_adv * actions)
 
         return policy_loss
 
@@ -344,7 +344,6 @@ class IQL(Agent):
         q2_loss.backward()
         self.q2_optimizer.step()
 
-        # Soft update of targets network
         self._soft_update(self.v_network, self.v_target_network)
 
         policy_loss = self._compute_policy_loss(states)
@@ -352,34 +351,6 @@ class IQL(Agent):
         policy_loss.backward()
         self.policy_optimizer.step()
 
-        # Update alpha parameter
-        # alpha_loss = self._compute_alpha_loss(states)
-        # self.alpha_optimizer.zero_grad()
-        # alpha_loss.backward()
-        # self.alpha_optimizer.step()
-
-    def _compute_alpha_loss(self, states: torch.Tensor) -> torch.Tensor:
-        """
-        Compute the temperature parameter loss.
-
-        L_temp (alpha) = [ -log (policy_theta (a_s | s)) - alpha target_entropy ]
-        """
-        # Create a workspace to compute policy distribution : log policy_theta (a_s | s)
-        policy_workspace = Workspace()
-        policy_workspace.set("env/env_obs", 0, states)
-        self.policy_network(policy_workspace, t=0)
-
-        # Sample actions from the policy
-        self.policy_network.sample_action(policy_workspace, t=0)
-        self.policy_network.get_log_prob(policy_workspace, t=0)
-        log_probs = policy_workspace.get("log_prob", 0)
-
-        # Compute the alpha loss : L_temp (alpha)
-        alpha = self.log_alpha.exp()
-        alpha_loss = (-alpha * (log_probs + self.target_entropy)).mean()
-
-        return alpha_loss
-    
     def _soft_update(
         self, source_network: nn.Module, target_network: nn.Module
     ) -> None:
