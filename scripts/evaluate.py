@@ -3,6 +3,7 @@ import gymnasium as gym  # noqa
 from afu.agents.ddpg import DDPG
 from afu.agents.sac import SAC
 from afu.agents.afu import AFU
+from afu.agents.afu_beta import AFUBeta
 
 from afu.agents.sac_opti import SACOpti
 from afu.agents.afu_opti import AFUOpti
@@ -31,6 +32,7 @@ ALGORITHMS: dict[str, Any] = {
     "sacopti": SACOpti,
     "afu": AFU,
     "afuopti": AFUOpti,
+    "afubeta": AFUBeta,
     "afuperrin": AFUPerrin,
     "iql": IQL,
     "calql": CalQL,

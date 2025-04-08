@@ -208,7 +208,7 @@ class ApproximatorNetwork(Agent):
         self.set(("log_prob", t), log_prob)
 
 
-class AFU_Beta:
+class AFUBeta:
     def __init__(self, hyperparameters: OmegaConf):
         self.params = hyperparameters
         self.train_env = gym.make(self.params.env_name)
@@ -575,12 +575,12 @@ class AFU_Beta:
         direction = mu_zeta - actions
         dot_product = (grad_q * direction).sum(dim=-1, keepdim=True)
 
+        # Compute the projection of grad_q orthogonal to direction
+        grad_q_proj = grad_q - (grad_q * direction).sum(dim=-1, keepdim=True) * direction / (direction.norm(dim=-1, keepdim=True).pow(2) + 1e-6)
+
         # Apply the gradient adjustment conditionally
         mask = (dot_product < 0) & (q_values < min_v_values)
-        grad_q_adjusted = grad_q.clone()
-        grad_q_adjusted[mask] = grad_q[mask] - (grad_q[mask] * direction[mask]).sum(
-            dim=-1, keepdim=True
-        ) * direction[mask] / (direction[mask].norm(dim=-1, keepdim=True) + 1e-6)
+        grad_q_adjusted = torch.where(mask, grad_q_proj, grad_q)
 
         # Compute the policy loss : L_policy (theta)
         alpha = self.log_alpha.exp()
@@ -757,7 +757,7 @@ class AFU_Beta:
         self.total_steps = save_dict["total_steps"]
 
     @classmethod
-    def loadagent(cls, path: str) -> "AFU":
+    def loadagent(cls, path: str) -> "AFUBeta":
         save_dict = torch.load(path)
         agent = cls(save_dict["params"])
         agent.load(path)
@@ -770,6 +770,7 @@ class AFU_Beta:
                 "hidden_size": 256,
                 "q_lr": 3e-4,
                 "v_lr": 3e-4,
+                "approximator_lr": 3e-4,
                 "policy_lr": 3e-4,
                 "alpha_lr": 3e-4,
                 "replay_size": 100_000,
@@ -786,6 +787,7 @@ class AFU_Beta:
             "hidden_size": ("int", 32, 512, True),
             "q_lr": ("float", 1e-5, 1e-2, True),
             "v_lr": ("float", 1e-5, 1e-2, True),
+            "approximator_lr": ("float", 1e-5, 1e-2, True),
             "policy_lr": ("float", 1e-5, 1e-2, True),
             "alpha_lr": ("float", 1e-5, 1e-2, True),
             "replay_size": ("int", 10_000, 1_000_000, True),
