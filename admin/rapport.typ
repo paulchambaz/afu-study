@@ -15,17 +15,39 @@ reference: [Master #smallcaps[Ai2d] M1],
 
 = Related Work
 
+
+Off-policy reinforcement learning has become essential for efficient data usage, especially in domains such as robotics where interactions are costly or risky. Traditional off-policy algorithms, such as Deep Deterministic Policy Gradient (DDPG) [Biblio] and its improved variant (TD3) [Biblio], rely on deterministic actor-critic architectures. These approaches, while sample-efficient, are prone to instability due to overestimation biases and convergence to local optima.
+
 Several algorithms have been developed to address the challenges of reinforcement learning in both online and offline settings. Among these, Soft Actor-Critic (SAC), Implicit Q-Learning (IQL), and Calibrated Q-Learning (Cal-QL) stand out for their performance and conceptual innovations.
 
 Soft Actor-Critic (SAC) [Biblio] is a widely used off-policy deep reinforcement learning algorithm based on the maximum entropy framework. SAC jointly learns a stochastic policy (actor) and two Q-value functions (critics), with a value function used for stability. The actor is updated to maximize expected reward while also maximizing entropy, encouraging exploration and robustness. SAC is highly sample-efficient and performs well in continuous control tasks, but it relies heavily on accurate Q-value estimation and often struggles in purely offline settings due to value overestimation and distributional shift between the behavior and target policies.
 
-To address some of the challenges in offline reinforcement learning, Implicit Q-Learning (IQL) [Biblio] introduces a conservative update strategy that avoids explicit policy learning. Instead of using the actor-critic paradigm, IQL trains a Q-function and a value function from a fixed dataset, using quantile regression to mitigate overestimation. The policy is then implicitly defined via advantage-weighted regression, without requiring interaction with the environment. This separation makes IQL robust to distribution shift and improves performance in the offline RL setting.
+To address some of the challenges in offline reinforcement learning, Implicit Q-Learning (IQL) [Biblio] introduces a conservative update strategy that avoids explicit policy learning. Instead of using the actor-critic paradigm, IQL trains a Q-function and a value function from a fixed dataset, using quantile regression to mitigate overestimation. The policy is then implicitly defined via advantage-weighted regression, without requiring interaction with the environment. This separation makes IQL robust to distribution shift and improves performance in the offline RL setting. However, IQL is sensitive to the choice of expectile parameter, which hinders its extension to online learning.
 
-Building on the idea of conservative Q-learning, Calibrated Q-Learning (Cal-QL) [Biblio] further refines Q-value estimation by incorporating calibration techniques. The motivation behind Cal-QL is that many offline RL failures stem from poor calibration of the learned Q-function, which can result in incorrect value targets and unstable learning. Cal-QL introduces a calibration loss that penalizes Q-values inconsistent with observed returns, thereby aligning the learned Q-function more closely with the empirical data distribution. This leads to more reliable policy evaluation and selection, particularly in high-stakes or high-variance environments.
+Building on the idea of conservative Q-learning, Calibrated Q-Learning (Cal-QL) [Biblio] further refines Q-value estimation by incorporating calibration techniques. The motivation behind Cal-QL is that many offline RL failures stem from poor calibration of the learned Q-function, which can result in incorrect value targets and unstable learning. Cal-QL introduces a calibration loss that penalizes Q-values inconsistent with observed returns, thereby aligning the learned Q-function more closely with the empirical data distribution. This leads to more reliable policy evaluation and selection, particularly in high-stakes or high-variance environments. Nevertheless, such methods remain sensitive to distributional shifts during the transition to online learning. It was also proven that the performance of Cal-QL plumets after 200k steps of training, which is a significant drawback for online learning.
 
-[Expliquer AFU]
+In contrast, Actor-Free Updates (AFU) [Biblio] proposes a fully decoupled critic learning mechanism, where Q-value targets are estimated via regression and conditional gradient scaling. This design enables the critic to learn from arbitrary data, including random or suboptimal transitions, opening the door to truly off-policy and robust RL algorithms in both online and offline settings.
+
+= Background
+<background>
+We consider a standard Markov Decision Process (MDP), defined as a tuple
+$cal(M) = (cal(S) \, cal(A) \, T \, R \, gamma)$, where $cal(S)$ is a
+continuous state space, $cal(A)$ a continuous action space, $T$ the
+transition probability, $R : cal(S) times cal(A) arrow.r bb(R)$ the
+reward function, and $gamma in \[ 0 \, 1 \)$ the discount factor. The
+goal is to learn a policy $pi$ that maximizes the expected cumulative
+reward: $ bb(E)_pi [sum_(t = 0)^oo gamma^t R (s_t \, a_t)] . $
+
+The optimal Q-function $Q^(\*) (s \, a)$ is defined as:
+$ Q^(\*) (s \, a) = bb(E)_(pi^(\*)) [sum_(t = 0)^oo gamma^t R (s_t \, a_t) divides s_0 = s \, a_0 = a] \, $
+where $pi^(\*)$ denotes the optimal policy.
+
+In continuous action spaces, computing $max_a Q (s \, a)$ is
+intractable, which motivates the use of parametric actors or
+regression-based methods like AFU to approximate this maximization.
 
 = Methods
+<method>
 
 == Environment
 
@@ -34,6 +56,73 @@ In order to test our algorithms, we wrapped the gymnasium environments in person
 == Algorithms
 
 We reimplemented DDPG, SAC, AFU, IQL and Cal-QL with the BBRL library.
+
+== Overview
+<overview>
+AFU (Actor-Free Updates) is an off-policy reinforcement learning
+algorithm that decouples the critic update from the actor. The core
+innovation lies in how AFU solves the #emph[max-Q problem];: instead of
+relying on an actor network to approximate $arg max_a Q (s \, a)$, it
+trains a value network $V_phi.alt (s)$ via regression to estimate
+$max_a Q (s \, a)$ directly.
+
+AFU employs three types of networks:
+
+- A Q-function $Q_psi (s \, a)$, trained using temporal-difference
+  learning;
+
+- A value network $V_(phi.alt_i) (s)$, trained to approximate
+  $max_a Q (s \, a)$;
+
+- An advantage network $A_(xi_i) (s \, a)$, enforcing
+  $Q (s \, a) approx V (s) + A (s \, a)$, with $A (s \, a) lt.eq 0$.
+
+== Solving the Max-Q Problem
+<solving-the-max-q-problem>
+The value and advantage networks are trained using the following
+soft-constrained loss:
+$ Lambda'_(V \, A) (phi.alt \, xi) = bb(E)_((s \, a) tilde.op cal(D)) [Z (Upsilon^a (s) - Q_psi (s \, a) \, A_xi (s \, a))] \, $
+where $ Z (x \, y) = cases(delim: "{", (x + y)^2 \, & upright("if ") x gt.eq 0, x^2 + y^2 \, & upright("otherwise")) $, and
+$Upsilon^a (s)$ modulates the gradient update to down-weight increases
+in $V_phi.alt$ when they would otherwise overestimate $Q$. This
+conditional gradient rescaling avoids the instability issues observed in
+regularized approaches like IQL or SQL.
+
+== Actor Training in AFU-alpha
+<actor-training-in-afu-alpha>
+In AFU-alpha, a stochastic actor $pi_theta$ is used for data collection
+and trained using a SAC-style loss:
+$ L_pi (theta) = bb(E)_(s \, a tilde.op pi_theta) [alpha log pi_theta (a divides s) - Q_psi (s \, a)] \, $
+$ L_(upright("temp")) (alpha) = bb(E)_(s \, a tilde.op pi_theta) [- alpha log pi_theta (a divides s) - alpha H^(‾)] \, $
+where $H^(‾)$ is a target entropy and $alpha$ is a temperature parameter
+optimized during training.
+
+== AFU-beta: Actor Guidance via Gradient Projection
+<afu-beta-actor-guidance-via-gradient-projection>
+To improve upon AFU-alpha and address SAC-like failure modes, AFU-beta
+introduces a regressed guidance network $mu_zeta (s)$, trained to match
+actions with high Q-values. Actor gradients are then projected to avoid
+directions that deviate from $mu_zeta (s)$ in low-value regions:
+$ upright(bold(G))_(s \, a) (nabla_a Q_psi (s \, a)) = cases(delim: "{", upright("proj")_(tack.t (mu_zeta (s) - a)) (nabla_a Q_psi (s \, a)) \, & upright("if misaligned and ") Q (s \, a) < V (s) \,, nabla_a Q_psi (s \, a) \, & upright("otherwise") .) $
+
+This results in a modified policy gradient
+$nabla_theta^(upright("MODIF")) L_pi (theta)$, which helps prevent the
+actor from becoming trapped in local optima.
+
+== Connection to Research Objectives
+<connection-to-research-objectives>
+AFU's design directly addresses our two research hypotheses:
+
++ #strong[Learning from Random Data:] Since AFU's critic is
+  actor-independent, it can learn effectively from random or off-policy
+  transitions, unlike SAC or DDPG.
+
++ #strong[Offline-to-Online Stability:] AFU's critic does not suffer
+  from over- or underestimation when exposed to unseen actions during
+  the transition from offline to online learning, offering more stable
+  performance.
+
+These properties are central to the experiments conducted in our study.
 
 = Experimental study
 
