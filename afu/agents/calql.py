@@ -447,6 +447,53 @@ class CALQL:
                 (1 - self.tau) * target_param.data + self.tau * source_param.data
             )
 
+    def get_weights(self) -> dict:
+        return {
+            # Network states
+            "q_network_state": self.q_network.state_dict(),
+            "q_target_network_state": self.q_target_network.state_dict(),
+            "policy_network_state": self.policy_network.state_dict(),
+            # Optimizer states
+            "q_optimizer_state": self.q_optimizer.state_dict(),
+            "policy_optimizer_state": self.policy_optimizer.state_dict(),
+            "alpha_optimizer_state": self.alpha_optimizer.state_dict(),
+            # Temperature parameter
+            "log_alpha": self.log_alpha.detach().cpu(),
+            # Other parameters
+            "params": self.params,
+        }
+
+    def save(self, path: str) -> None:
+        save_dict = self.get_weights()
+        torch.save(save_dict, path)
+
+    def load(self, path: str) -> None:
+        save_dict = torch.load(path)
+
+        # Restore network states
+        self.q_network.load_state_dict(save_dict["q_network_state"])
+        self.q_target_network.load_state_dict(save_dict["q_target_network_state"])
+        self.policy_network.load_state_dict(save_dict["policy_network_state"])
+
+        # Restore optimizer states
+        self.q_optimizer.load_state_dict(save_dict["q_optimizer_statvwye"])
+        self.policy_optimizer.load_state_dict(save_dict["policy_optimizer_state"])
+        self.alpha_optimizer.load_state_dict(save_dict["alpha_optimizer_state"])
+
+        # Restore temperature parameter
+        with torch.no_grad():
+            self.log_alpha.copy_(save_dict["log_alpha"])
+
+        # Restore other parameters
+        self.params = save_dict["params"]
+
+    @classmethod
+    def loadagent(cls, path: str) -> "CALQL":
+        save_dict = torch.load(path)
+        agent = cls(save_dict["params"])
+        agent.load(path)
+        return agent
+
     @classmethod
     def _get_params_defaults(cls) -> OmegaConf:
         return OmegaConf.create(
