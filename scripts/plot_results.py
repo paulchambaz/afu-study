@@ -85,9 +85,9 @@ def plot_histograms(experiment_results, colors_dict, experiment, env):
 def main():
     # algorithms = ["DDPG", "SAC", "AFU"]
     # algorithms = ["SAC", "AFU"]
-    algorithms = ["AFU", "IQL"]
+    algorithms = ["IQL"]
     # experiments = ["OffPolicy", "OnPolicy", "RandomWalkPolicy", "OptimalOffPolicy"]
-    experiments = ["Offline-OffPolicyDataset"]
+    experiments = ["Offline-AFUOnPolicyDataset"]
 
     env = "Pendulum"
     env_dict = {
