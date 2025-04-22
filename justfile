@@ -11,10 +11,10 @@ plot *ARGS:
   python -m scripts.plot_results {{ARGS}}
 
 demo:
-  python -m scripts.demo --algo sac --env pendulum --episodes 2000 --weights ./weights/OnPolicy-SAC-PendulumStudy-v0-weights.pt
+  python -m scripts.demo --algo afu --env pendulum --episodes 2000 --weights ./weights/OffPolicy-AFU-PendulumStudy-v0-weights.pt
 
 generate:
-  python -m scripts.generate_dataset --algo sac --env pendulum --episodes 100 --weights ./weights/OnPolicy-SAC-PendulumStudy-v0-weights.pt --output ./dataset/OnPolicy-SAC-PendulumStudy-v0-data.pk
+  python -m scripts.generate_dataset --algo afu --env pendulum --episodes 250 --weights ./weights/OnPolicy-AFU-PendulumStudy-v0-weights.pt --output ./dataset/OnPolicy-AFU-PendulumStudy-v0-data.pk
 
 dqn:
   python -m scripts.dqn_test --episodes 500

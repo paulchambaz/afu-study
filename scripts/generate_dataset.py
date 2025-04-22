@@ -3,6 +3,7 @@ import gymnasium as gym
 import pickle
 import numpy as np
 from pathlib import Path
+from tqdm import tqdm
 
 from afu.agents.ddpg import DDPG
 from afu.agents.sac import SAC
@@ -50,14 +51,14 @@ def collect_episodes(env_name, agent, episodes=100, render_mode=None):
     total_rewards = []
     total_steps = 0
 
-    for episode in range(episodes):
+    for episode in tqdm(range(episodes)):
         observation, _ = env.reset()
         done = False
         episode_reward = 0
         step = 0
 
         while not done:
-            action = agent.select_action(observation, evaluation=True)
+            action = agent.select_action(observation, evaluation=False)
             scaled_action = scale_action(action, action_space)
 
             next_observation, reward, terminated, truncated, _ = env.step(scaled_action)
@@ -74,11 +75,6 @@ def collect_episodes(env_name, agent, episodes=100, render_mode=None):
             total_steps += 1
 
         total_rewards.append(episode_reward)
-
-        if (episode + 1) % 10 == 0:
-            print(
-                f"Episode {episode + 1}/{episodes} completed. Avg reward so far: {np.mean(total_rewards):.4f}"
-            )
 
     env.close()
 
