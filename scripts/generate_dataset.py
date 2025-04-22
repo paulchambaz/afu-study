@@ -181,7 +181,7 @@ def main():
     # Save transitions to pickle file
     output_path = Path(args.output)
     dataset = {
-        "transitions": transitions,  # The actual transitions
+        "transitions": transitions,
         "env_name": env_name,
         "algo": args.algo,
         "stats": stats,
