@@ -8,7 +8,7 @@ from afu.agents.afu_beta import AFUBeta
 from afu.agents.sac_opti import SACOpti
 from afu.agents.afu_opti import AFUOpti
 
-from afu.agents.calql import CalQL
+from afu.agents.calql import CALQL
 from afu.agents.iql import IQL
 
 from afu.agents.afu_perrin import AFUPerrin
@@ -21,10 +21,10 @@ from afu.experiments.random_walk_policy import RandomWalkPolicy
 from afu.experiments.hybrid_policy import HybridPolicy
 from afu.experiments.optimal_off_policy import OptimalOffPolicy
 from afu.experiments.off_policy_network import OffPolicyNetwork
+from afu.experiments.offline import Offline
 import argparse
 
 from typing import Type, Any
-
 
 ALGORITHMS: dict[str, Any] = {
     "ddpg": DDPG,
@@ -35,7 +35,7 @@ ALGORITHMS: dict[str, Any] = {
     "afubeta": AFUBeta,
     "afuperrin": AFUPerrin,
     "iql": IQL,
-    "calql": CalQL,
+    "calql": CALQL,
 }
 
 
@@ -58,6 +58,7 @@ EXPERIMENTS: dict[str, Type[Experiment]] = {
     "hybridpolicy": HybridPolicy,
     "optimaloffpolicy": OptimalOffPolicy,
     "offpolicynetwork": OffPolicyNetwork,
+    "offline": Offline,
 }
 
 
