@@ -1,14 +1,21 @@
 from .base import Experiment
 import numpy as np
+import pickle
+from tqdm import tqdm
 
 
 class OfflineOnlineTransition(Experiment):
     def run(self, j, shared_results, results_lock, manager):
         agent = self.algo(self.hyperparameters)
 
-        dataset = agent.train_env.unwrapped.dataset
+        dataset_path = f"./dataset/OffPolicy-{self.algo.__name__}-PendulumStudy-v0-data.pk"
+        with open(dataset_path, "rb") as f:
+            dataset = pickle.load(f)
 
-        total_samples = len(dataset["observations"])
+        # dataset = dataset["transitions"]
+        # print(dataset)
+
+        total_samples = len(dataset["transitions"][0])
         remaining_indices = np.arange(total_samples)
         np.random.shuffle(remaining_indices)
 
@@ -16,43 +23,50 @@ class OfflineOnlineTransition(Experiment):
         offline_step = 0
 
         for step in range(self.params.offline_steps):
-            batch_size = min(self.params.batch_size, len(remaining_indices))
+            # batch_size = min(self.params.batch_size, len(remaining_indices))
 
-            batch_indices = remaining_indices[:batch_size]
-            remaining_indices = remaining_indices[batch_size:]
+            # batch_indices = remaining_indices[:batch_size]
+            # remaining_indices = remaining_indices[batch_size:]
+            # print(batch_indices)
 
-            states = dataset["observations"][batch_indices]
-            actions = dataset["actions"][batch_indices]
-            rewards = dataset["rewards"][batch_indices]
-            next_states = dataset["next_observations"][batch_indices]
-            dones = dataset["terminals"][batch_indices]
+            # print(dataset["transitions"][step][0], "\n", dataset["transitions"][step][1] ,"\n", dataset["transitions"][step][2] ,"\n", dataset["transitions"][step][3] ,"\n", dataset["transitions"][step][4])
+            states = dataset["transitions"][step][0]
+            actions = dataset["transitions"][step][1]
+            rewards = dataset["transitions"][step][2]
+            next_states = dataset["transitions"][step][3]
+            dones = dataset["transitions"][step][4]
+            # print(states, actions, rewards, next_states, dones)
 
-            for s, a, r, ns, d in zip(states, actions, rewards, next_states, dones):
-                agent.replay_buffer.push(s, a, r, ns, d)
+            # for s, a, r, ns, d in zip(states, actions, rewards, next_states, dones):
+            agent.replay_buffer.push(states, actions, rewards, next_states, dones)
 
             agent.update()
             agent.total_steps += 1
             offline_step += 1
-            training_step += 1
 
-            if training_step % self.params.offline_interval == 0:
+            if offline_step % self.params.offline_interval == 0:
                 results = self.evaluation(agent)
-                id = training_step // self.params.offline_interval
+                id = offline_step // self.params.offline_interval
                 with results_lock:
-                    if id not in shared_results["rewards"]:
-                        shared_results["rewards"][id] = results
+                    if id not in shared_results[2]:
+                        shared_results[2][id] = results
                     else:
-                        current_results = shared_results["rewards"][id]
-                        shared_results["rewards"][id] = current_results + results
+                        current_results = shared_results[2][id]
+                        shared_results[2][id] = current_results + results
 
                 # Store the transition point for visualization
                 with results_lock:
                     if "offline_transition" not in shared_results:
-                        shared_results["offline_transition"] = training_step
+                        shared_results["offline_transition"] = offline_step
 
         # TODO: we have to decide if we want to empty the replay buffer at this point
         # if we do we should also reset the total steps
         # Cal-QL: keep the replay buffer
+
+        progress = tqdm(
+            range(self.params.total_steps),
+            desc=f"Training {j}/{self.params.n}",
+        )
 
         while training_step < self.params.total_steps:
             state, _ = agent.train_env.reset()
@@ -77,11 +91,11 @@ class OfflineOnlineTransition(Experiment):
                     id = training_step // self.params.interval
 
                     with results_lock:
-                        if id not in shared_results["rewards"]:
-                            shared_results["rewards"][id] = eval_results
+                        if id not in shared_results[2]:
+                            shared_results[2][id] = eval_results
                         else:
-                            current_results = shared_results["rewards"][id]
-                            shared_results["rewards"][id] = (
+                            current_results = shared_results[2][id]
+                            shared_results[2][id] = (
                                 current_results + eval_results
                             )
 

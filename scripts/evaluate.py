@@ -16,6 +16,7 @@ from afu.agents.afu_perrin import AFUPerrin
 from afu.experiments.base import Experiment
 from afu.experiments.off_policy import OffPolicy
 from afu.experiments.on_policy import OnPolicy
+from afu.experiments.offline import Offline
 from afu.experiments.offline_online_transition import OfflineOnlineTransition
 from afu.experiments.random_walk_policy import RandomWalkPolicy
 from afu.experiments.hybrid_policy import HybridPolicy
@@ -53,6 +54,7 @@ ENVS: dict[str, str] = {
 EXPERIMENTS: dict[str, Type[Experiment]] = {
     "onpolicy": OnPolicy,
     "offpolicy": OffPolicy,
+    "offline": Offline,
     "offtoon": OfflineOnlineTransition,
     "randomwalkpolicy": RandomWalkPolicy,
     "hybridpolicy": HybridPolicy,
