@@ -233,6 +233,9 @@ class Experiment(ABC):
                 "n": 15,
                 "interval": 100,
                 "update_interval": 1000,
+                "batch_size": 50_000,
+                "offline_steps": 500,
+                "offline_interval": 10_000,
                 "total_steps": 50_000,
                 "seed": None,
             }
