@@ -190,6 +190,10 @@ class CALQL:
         for k in count_keys:
             del self.mc_returns[k]
 
+        self.min_mc_returns = self.mc_returns[
+            min(self.mc_returns, key=self.mc_returns.get)
+        ]
+
     def select_action(self, state: np.ndarray, evaluation: bool = False) -> np.ndarray:
         workspace = Workspace()
         state_tensor = torch.FloatTensor(state[None, ...])
@@ -386,11 +390,7 @@ class CALQL:
         return values
 
     def _find_nearest_value(self, state: torch.Tensor) -> torch.Tensor:
-        nearest_state = min(
-            self.mc_returns.keys(),
-            key=lambda k: np.sum((np.array(k) - np.array(state)) ** 2),
-        )
-        return self.mc_returns[nearest_state]
+        return self.min_mc_returns
 
     def _compute_policy_loss(self, states: torch.Tensor) -> torch.Tensor:
         """

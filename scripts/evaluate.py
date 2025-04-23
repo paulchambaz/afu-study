@@ -22,7 +22,6 @@ from afu.experiments.random_walk_policy import RandomWalkPolicy
 from afu.experiments.hybrid_policy import HybridPolicy
 from afu.experiments.optimal_off_policy import OptimalOffPolicy
 from afu.experiments.off_policy_network import OffPolicyNetwork
-from afu.experiments.offline import Offline
 import argparse
 
 from typing import Type, Any
@@ -54,8 +53,7 @@ ENVS: dict[str, str] = {
 EXPERIMENTS: dict[str, Type[Experiment]] = {
     "onpolicy": OnPolicy,
     "offpolicy": OffPolicy,
-    "offline": Offline,
-    "offtoon": OfflineOnlineTransition,
+    "offlineonline": OfflineOnlineTransition,
     "randomwalkpolicy": RandomWalkPolicy,
     "hybridpolicy": HybridPolicy,
     "optimaloffpolicy": OptimalOffPolicy,
