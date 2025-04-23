@@ -391,15 +391,18 @@ class IQL:
         return {
             # Network states
             "q_network1_state": self.q_network1.state_dict(),
-            "q_network2_state": self.q_network2.state_dict(),
+            "q_network2_state": self.q_network1.state_dict(),
+            "q_target_network1_state": self.q_target_network1.state_dict(),
+            "q_target_network2_state": self.q_target_network2.state_dict(),
             "v_network_state": self.v_network.state_dict(),
-            "v_target_network_state": self.v_target_network.state_dict(),
             "policy_network_state": self.policy_network.state_dict(),
             # Optimizer states
             "q1_optimizer_state": self.q1_optimizer.state_dict(),
             "q2_optimizer_state": self.q2_optimizer.state_dict(),
             "v_optimizer_state": self.v_optimizer.state_dict(),
             "policy_optimizer_state": self.policy_optimizer.state_dict(),
+            # Temperature parameter
+            "log_alpha": self.log_alpha.detach().cpu(),
             # Other parameters
             "params": self.params,
         }
@@ -414,8 +417,9 @@ class IQL:
         # Restore network states
         self.q_network1.load_state_dict(save_dict["q_network1_state"])
         self.q_network2.load_state_dict(save_dict["q_network2_state"])
+        self.q_target_network1.load_state_dict(save_dict["q_target_network1_state"])
+        self.q_target_network2.load_state_dict(save_dict["q_target_network2_state"])
         self.v_network.load_state_dict(save_dict["v_network_state"])
-        self.v_target_network.load_state_dict(save_dict["v_target_network_state"])
         self.policy_network.load_state_dict(save_dict["policy_network_state"])
 
         # Restore optimizer states
