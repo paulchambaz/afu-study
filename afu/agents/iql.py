@@ -3,7 +3,6 @@ import torch
 import torch.nn as nn
 import numpy as np
 import gymnasium as gym
-
 from bbrl.agents import Agent  # type: ignore
 from bbrl_utils.nn import build_mlp  # type: ignore
 from bbrl.workspace import Workspace  # type: ignore
@@ -69,8 +68,7 @@ class PolicyNetwork(Agent):
         )
         self.log_std = nn.Parameter(torch.zeros(action_dim))
 
-        # From the official implementation
-        self.log_std_min = -10
+        self.log_std_min = -20
         self.log_std_max = 2
 
     def forward(self, t: int) -> None:
@@ -120,6 +118,7 @@ class PolicyNetwork(Agent):
         ).sum(dim=-1)
 
         log_prob = normal_log_prob - torch.log(1 - action.pow(2) + 1e-6).sum(dim=-1)
+
         self.set(("log_prob", t), log_prob)
 
 
@@ -186,6 +185,7 @@ class IQL:
             action_dim=self.action_dim,
         )
 
+        # Temperature
         self.log_alpha = nn.Parameter(torch.zeros(1, requires_grad=True))
 
         # Optimizers
@@ -198,14 +198,20 @@ class IQL:
         self.v_optimizer = torch.optim.Adam(
             self.v_network.parameters(), lr=self.params.v_lr
         )
+
         self.policy_optimizer = torch.optim.Adam(
             self.policy_network.parameters(), lr=self.params.policy_lr
+        )
+
+        self.alpha_optimizer = torch.optim.Adam(
+            [self.log_alpha], lr=self.params.alpha_lr
         )
 
         # Hyperparameters
         self.replay_buffer = ReplayBuffer(self.params.replay_size)
         self.batch_size = self.params.batch_size
         self.tau = self.params.tau
+        self.tau_regression = self.params.tau_regression
         self.beta = self.params.beta
         self.gamma = self.params.gamma
         self.total_steps = 0
@@ -255,7 +261,7 @@ class IQL:
         self._soft_update(self.q_network1, self.q_target_network1)
         self._soft_update(self.q_network2, self.q_target_network2)
 
-        policy_loss = self._compute_policy_loss(states)
+        policy_loss = self._compute_policy_loss(states, actions)
         self.policy_optimizer.zero_grad()
         policy_loss.backward()
         self.policy_optimizer.step()
@@ -290,8 +296,10 @@ class IQL:
 
         mask = u < 0
         l_values = torch.zeros_like(u)
-        l_values[mask] = torch.abs(torch.tensor(self.tau - 1)) * u[mask].pow(2)
-        l_values[~mask] = torch.abs(torch.tensor(self.tau)) * u[~mask].pow(2)
+        l_values[mask] = torch.abs(torch.tensor(self.tau_regression - 1)) * u[mask].pow(
+            2
+        )
+        l_values[~mask] = torch.abs(torch.tensor(self.tau_regression)) * u[~mask].pow(2)
 
         v_loss = l_values.mean()
 
@@ -337,7 +345,7 @@ class IQL:
 
         return q_loss
 
-    def _compute_policy_loss(self, states: torch.Tensor):
+    def _compute_policy_loss(self, states: torch.Tensor, actions: torch.Tensor):
         """
         L_pi (psi.alt) = mean [
             exp(beta (Q_hat(theta) (s, a) - V_psi (s))) log pi_phi.alt (a|s)
@@ -346,9 +354,14 @@ class IQL:
         policy_workspace = Workspace()
         policy_workspace.set("env/env_obs", 0, states)
         self.policy_network(policy_workspace, t=0)
-        self.policy_network.sample_action(policy_workspace, t=0)
+        policy_workspace.set("action", 0, actions)
+        sample = torch.arctanh(
+            torch.max(
+                torch.tensor(-1 + 1e-6), torch.min(torch.tensor(1 - 1e-6), actions)
+            )
+        )
+        policy_workspace.set("sample", 0, sample)
         self.policy_network.get_log_prob(policy_workspace, t=0)
-        actions = policy_workspace.get("action", 0)
         log_probs = policy_workspace.get("log_prob", 0)
 
         q1_target_workspace = Workspace()
@@ -371,7 +384,9 @@ class IQL:
         v_values = v_workspace.get("v/v_value", 0)
 
         adv = q_values - v_values
+
         exp_adv = torch.exp(self.beta * adv)
+
         policy_loss = torch.mean(exp_adv * log_probs)
 
         return policy_loss
@@ -451,9 +466,10 @@ class IQL:
                 "v_lr": 3e-4,
                 "policy_lr": 3e-4,
                 "alpha_lr": 0.005,
-                "replay_size": 100_000,
-                "batch_size": 256,
+                "replay_size": 200_000,
+                "batch_size": 16,
                 "tau": 0.9,
+                "tau_regression": 0.9,
                 "beta": 3.0,
                 "gamma": 0.99,
             }
@@ -470,6 +486,7 @@ class IQL:
             "replay_size": ("int", 10_000, 1_000_000, True),
             "batch_size": ("int", 32, 1024, True),
             "tau": ("float", 1e-4, 1e-1, True),
+            "tau_regression": ("float", 1e-4, 1e-1, True),
             "beta": ("float", 1.0, 10.0, True),
             "gamma": ("float", 0.9, 0.999, False),
         }
