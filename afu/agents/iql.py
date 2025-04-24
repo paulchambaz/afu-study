@@ -383,7 +383,7 @@ class IQL:
         self.v_network(v_workspace, t=0)
         v_values = v_workspace.get("v/v_value", 0)
 
-        adv = q_values - v_values
+        adv = torch.min(torch.tensor(0), q_values - v_values)
 
         exp_adv = torch.exp(self.beta * adv)
 
