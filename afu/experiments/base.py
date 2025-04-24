@@ -97,14 +97,9 @@ class Experiment(ABC):
             while not done:
                 action = agent.select_action(observation, evaluation=True)
                 scaled_action = self._scale_action(action, self.action_space)
-                print(observation)
-                print(scaled_action)
                 observation, reward, terminated, truncated, _ = env.step(scaled_action)
-                print(reward)
                 done = terminated or truncated
-                print(done)
                 total_reward += reward
-                print()
 
             results.append(total_reward)
 
