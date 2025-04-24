@@ -576,7 +576,9 @@ class AFUBeta:
         dot_product = (grad_q * direction).sum(dim=-1, keepdim=True)
 
         # Compute the projection of grad_q orthogonal to direction
-        grad_q_proj = grad_q - (grad_q * direction).sum(dim=-1, keepdim=True) * direction / (direction.norm(dim=-1, keepdim=True).pow(2) + 1e-6)
+        grad_q_proj = grad_q - (grad_q * direction).sum(
+            dim=-1, keepdim=True
+        ) * direction / (direction.norm(dim=-1, keepdim=True).pow(2) + 1e-6)
 
         # Apply the gradient adjustment conditionally
         mask = (dot_product < 0) & (q_values < min_v_values)
@@ -595,7 +597,7 @@ class AFUBeta:
                 )[0]
 
         return policy_loss
-    
+
     def _compute_approximator_loss(self, states: torch.Tensor, actions) -> torch.Tensor:
         """
         Compute the approximator loss based on the formula.
@@ -653,9 +655,13 @@ class AFUBeta:
         # Compute the approximator loss
         if filtered_states.size(0) > 0:
             approximator_predictions = self.approximator_network.model(filtered_states)
-            approximator_loss = (approximator_predictions - filtered_actions).pow(2).mean()
+            approximator_loss = (
+                (approximator_predictions - filtered_actions).pow(2).mean()
+            )
         else:
-            approximator_loss = torch.tensor(0.0, requires_grad=True, device=states.device)
+            approximator_loss = torch.tensor(
+                0.0, requires_grad=True, device=states.device
+            )
 
         return approximator_loss
 
@@ -735,7 +741,9 @@ class AFUBeta:
         self.v_target_network2.load_state_dict(save_dict["v_target_network2_state"])
         self.a_network1.load_state_dict(save_dict["a_network1_state"])
         self.a_network2.load_state_dict(save_dict["a_network2_state"])
-        self.approximator_network.load_state_dict(save_dict["approximator_network_state"])
+        self.approximator_network.load_state_dict(
+            save_dict["approximator_network_state"]
+        )
         self.policy_network.load_state_dict(save_dict["policy_network_state"])
 
         # Restore optimizer states
@@ -744,7 +752,9 @@ class AFUBeta:
         self.v2_optimizer.load_state_dict(save_dict["v2_optimizer_state"])
         self.a1_optimizer.load_state_dict(save_dict["a1_optimizer_state"])
         self.a2_optimizer.load_state_dict(save_dict["a2_optimizer_state"])
-        self.approximator_optimizer.load_state_dict(save_dict["approximator_optimizer_state"])
+        self.approximator_optimizer.load_state_dict(
+            save_dict["approximator_optimizer_state"]
+        )
         self.policy_optimizer.load_state_dict(save_dict["policy_optimizer_state"])
         self.alpha_optimizer.load_state_dict(save_dict["alpha_optimizer_state"])
 
@@ -773,7 +783,7 @@ class AFUBeta:
                 "approximator_lr": 3e-4,
                 "policy_lr": 3e-4,
                 "alpha_lr": 3e-4,
-                "replay_size": 100_000,
+                "replay_size": 200_000,
                 "batch_size": 256,
                 "gradient_reduction": 0.5,
                 "tau": 0.01,
