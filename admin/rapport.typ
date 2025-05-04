@@ -16,11 +16,11 @@ reference: [Master #smallcaps[Ai2d] M1],
 = Related Work
 
 
-Off-policy reinforcement learning has become essential for efficient data usage, especially in domains such as robotics where interactions are costly or risky. Traditional off-policy algorithms, such as Deep Deterministic Policy Gradient (DDPG) [Biblio] and its improved variant (TD3) [Biblio], rely on deterministic actor-critic architectures. These approaches, while sample-efficient, are prone to instability due to overestimation biases and convergence to local optima.
-
-Several algorithms have been developed to address the challenges of reinforcement learning in both online and offline settings. Among these, Soft Actor-Critic (SAC), Implicit Q-Learning (IQL), and Calibrated Q-Learning (Cal-QL) stand out for their performance and conceptual innovations.
+Off-policy reinforcement learning has become essential for efficient data usage, especially in domains such as robotics where interactions are costly or risky. Traditional off-policy algorithms, such as Deep Deterministic Policy Gradient (DDPG) [Biblio] and its improved variant (TD3) [Biblio], rely on deterministic actor-critic architectures. These approaches, while sample-efficient, are prone to instability due to overestimation biases and convergence to local optima. Soft Actor-Critic (SAC), a more recent off-policy algorithm, addresses some of these issues by incorporating entropy regularization, but it still faces challenges in offline settings where the distribution of data may differ significantly from the target policy.
 
 Soft Actor-Critic (SAC) [Biblio] is a widely used off-policy deep reinforcement learning algorithm based on the maximum entropy framework. SAC jointly learns a stochastic policy (actor) and two Q-value functions (critics), with a value function used for stability. The actor is updated to maximize expected reward while also maximizing entropy, encouraging exploration and robustness. SAC is highly sample-efficient and performs well in continuous control tasks, but it relies heavily on accurate Q-value estimation and often struggles in purely offline settings due to value overestimation and distributional shift between the behavior and target policies.
+
+Several algorithms have been developed to address the challenges of reinforcement learning in both online and offline settings. Among these, Implicit Q-Learning (IQL), and Calibrated Q-Learning (Cal-QL) stand out for their performance and conceptual innovations.
 
 To address some of the challenges in offline reinforcement learning, Implicit Q-Learning (IQL) [Biblio] introduces a conservative update strategy that avoids explicit policy learning. Instead of using the actor-critic paradigm, IQL trains a Q-function and a value function from a fixed dataset, using quantile regression to mitigate overestimation. The policy is then implicitly defined via advantage-weighted regression, without requiring interaction with the environment. This separation makes IQL robust to distribution shift and improves performance in the offline RL setting. However, IQL is sensitive to the choice of expectile parameter, which hinders its extension to online learning.
 
@@ -122,7 +122,7 @@ AFU's design directly addresses our two research hypotheses:
   the transition from offline to online learning, offering more stable
   performance.
 
-These properties are central to the experiments conducted in our study.
+In this study we will try to validate these hypotheses by creating various experimental settings. We will also compare AFU with other algorithms such as SAC, IQL and Cal-QL.
 
 = Experimental study
 
@@ -168,4 +168,48 @@ Such an experimental setup simulates learning from behavior that is entirely unr
 
 The same $epsilon$-based framework from the first experiment could be employed here, offering another way to measure degradation in performance as the data distribution diverges from the policy. [Résultats à inclure dans le rapport]
 
+== Offline to Online Training
+
+=== First Results
+
+We also evaluated AFU in an Offline-to-Online setting, where the agent first learns from a fixed dataset and then transitions to online learning. We used the same datasets as in the previous experiments, but this time we trained AFU for 1 million steps in an offline setting before switching to online training.
+
 = Conclusion
+
+= Appendix A
+
+== Experimental Details
+
+=== Environment Wrappers
+
+The custom environment wrappers used in this study include the following methods:
+- `_set_state`: Allows resetting the environment to a specific state.
+- `get_obs`: Retrieves the current observation.
+- `get_observation_space`: Returns the observation space of the environment.
+- `get_action_space`: Returns the action space of the environment.
+
+These wrappers were implemented to ensure compatibility with the algorithms and to facilitate reproducibility of the experiments.
+
+=== Hyperparameters
+
+The following hyperparameters were used for the experiments:
+- Learning rate: 
+- Discount factor ($gamma$): 
+- Batch size: 
+- Replay buffer size: 
+- Target network update rate ($tau$): 
+- Temperature parameter ($alpha$): 
+
+== Reproducibility
+
+The code for all algorithms and experiments is available at [GitHub Repository]. The repository includes detailed instructions for setting up the environment and running the experiments.
+
+== Additional Figures
+
+Figures referenced in the report, including learning curves and performance histograms, are provided in the supplementary materials. These figures illustrate the comparative performance of the algorithms across different environments and settings.
+
+= Appendix B
+
+== Cal-QL errors
+
+The Cal-QL algorithm was observed to exhibit significant performance degradation after 200k steps of training. This behavior was consistent across multiple runs and environments, indicating a potential issue with the algorithm's stability or convergence properties in the offline setting.
