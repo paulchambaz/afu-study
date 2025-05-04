@@ -6,20 +6,27 @@ import pickle
 class Offline(Experiment):
     def run(self, i, shared_results, results_lock, manager):
         training_step = 0
+
+        dataset_files = [
+            "dataset/OnPolicy-SAC-PendulumStudy-v0-data.pk",
+        ]
+
+        self.hyperparameters["dataset_files"] = dataset_files
+
+        dataset = []
+        for file in dataset_files:
+            with open(file, "rb") as f:
+                results = pickle.load(f)
+                dataset.extend(results["transitions"])
+
         agent = self.algo(self.hyperparameters)
-
-        # dataset = self.hyperparameters["dataset"]
-        dataset_path = f"./dataset/OnPolicy-AFU-PendulumStudy-v0-data.pk"
-        with open(dataset_path, "rb") as f:
-            dataset = pickle.load(f)
-
-        dataset = dataset["transitions"]
 
         progress = tqdm(dataset, desc=f"Training {i}/{self.params.n}")
 
-        for state, action, reward, next_state, done in progress:
-            agent.replay_buffer.push(state, action, reward, next_state, done)
+        for state, action, reward, next_state, done in dataset:
+            agent.replay_buffer.push(state, action * 0.5, reward, next_state, done)
 
+        for _ in progress:
             agent.update()
             agent.total_steps += 1
             training_step += 1

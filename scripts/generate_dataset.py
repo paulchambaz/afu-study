@@ -64,10 +64,7 @@ def collect_episodes(env_name, agent, episodes=100, render_mode=None):
             next_observation, reward, terminated, truncated, _ = env.step(scaled_action)
             done = terminated or truncated
 
-            # Store transition in simple list
-            transitions.append(
-                (observation, scaled_action, reward, next_observation, done)
-            )
+            transitions.append((observation, action, reward, next_observation, done))
 
             observation = next_observation
             episode_reward += reward
@@ -181,7 +178,7 @@ def main():
     # Save transitions to pickle file
     output_path = Path(args.output)
     dataset = {
-        "transitions": transitions,  # The actual transitions
+        "transitions": transitions,
         "env_name": env_name,
         "algo": args.algo,
         "stats": stats,

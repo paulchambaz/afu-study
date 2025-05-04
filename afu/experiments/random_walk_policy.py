@@ -29,10 +29,10 @@ class RandomWalkPolicy(Experiment):
                 action = np.random.uniform(
                     low=-1.0, high=1.0, size=self.action_space[0].shape
                 )
-                action = self._scale_action(action, self.action_space)
+                scaled_action = self._scale_action(action, self.action_space)
 
                 next_state, reward, terminated, truncated, _ = agent.train_env.step(
-                    action
+                    scaled_action
                 )
                 done = terminated or truncated
 

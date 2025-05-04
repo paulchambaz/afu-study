@@ -191,7 +191,7 @@ class DQN:
             {
                 "hidden_size": 256,
                 "q_lr": 3e-4,
-                "replay_size": 100_000,
+                "replay_size": 200_000,
                 "batch_size": 256,
                 "gamma": 0.99,
                 "decay_rate": 0.9999,

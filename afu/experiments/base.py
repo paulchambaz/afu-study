@@ -85,26 +85,32 @@ class Experiment(ABC):
 
         return scaled
 
-    def evaluation(self, agent, n=11):
+    def evaluation(self, agent, n=10):
         env = gym.make(self.params.env_name)
+
         results = []
+        transitions = []
 
         for _ in range(n):
-            observation, _ = env.reset()
+            state, _ = env.reset()
             done = False
             total_reward = 0
 
             while not done:
-                action = agent.select_action(observation, evaluation=True)
-                action = self._scale_action(action, self.action_space)
-                observation, reward, terminated, truncated, _ = env.step(action)
+                action = agent.select_action(state, evaluation=True)
+                scaled_action = self._scale_action(action, self.action_space)
+                next_state, reward, terminated, truncated, _ = env.step(scaled_action)
                 done = terminated or truncated
+
+                transitions.append((state, action, reward, next_state, done))
+
                 total_reward += reward
+                state = next_state
 
             results.append(total_reward)
 
         env.close()
-        return results
+        return results, transitions
 
     def log_metrics(self, step, metrics) -> None:
         for key, value in metrics.items():
@@ -115,6 +121,7 @@ class Experiment(ABC):
     def save_results(self) -> None:
         Path("results").mkdir(exist_ok=True)
         Path("weights").mkdir(exist_ok=True)
+        Path("dataset").mkdir(exist_ok=True)
         policy_type = self.__class__.__name__
         algo_name = self.algo.__name__
 
@@ -132,6 +139,14 @@ class Experiment(ABC):
         )
         torch.save(self.agent, weights_filename)
         print(f"Agent weights saved to {weights_filename}")
+
+        dataset_filename = (
+            f"dataset/{policy_type}-{algo_name}-{self.params.env_name}-dataset.pk"
+        )
+
+        with open(dataset_filename, "wb") as f:
+            pickle.dump(self.transitions, f)
+        print(f"Results saved to {dataset_filename}")
 
     def send_to_influxdb(self, metrics) -> None:
         """
@@ -169,6 +184,7 @@ class Experiment(ABC):
 
         self.results = {"rewards": dict(shared_results["rewards"])}
         self.agent = dict(shared_results["agent"])
+        self.transitions = shared_results["transitions"]
 
     def tuned_run(self, n_trials=50, n_parallel_trials=5, n_runs=3):
         if n_trials > 0:

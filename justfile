@@ -1,8 +1,9 @@
 run *ARGS:
-  python -m scripts.evaluate --algo afu --env pendulum --experiment offline --run 5 --steps 100000 --trials 0
+  python -m scripts.evaluate --algo sac --env pendulum --experiment onpolicydataset --run 1 --steps 100000 --trials 0
+  python -m scripts.evaluate --algo afu --env pendulum --experiment offpolicydataset --run 1 --steps 100000 --trials 0
 
 run-tiny:
-  python -m scripts.evaluate --algo afu --env pendulum --experiment offline --run 1 --steps 400 --trials 0
+  python -m scripts.evaluate --algo afu --env pendulum --experiment offpolicydataset --run 1 --steps 500 --trials 0
 
 evaluate *ARGS:
   python -m scripts.evaluate {{ARGS}}
@@ -13,11 +14,11 @@ plot *ARGS:
 demo:
   python -m scripts.demo --algo afu --env pendulum --episodes 2000 --weights ./weights/OffPolicy-AFU-PendulumStudy-v0-weights.pt
 
-generate:
-  python -m scripts.generate_dataset --algo afu --env pendulum --episodes 250 --weights ./weights/OnPolicy-AFU-PendulumStudy-v0-weights.pt --output ./dataset/OnPolicy-AFU-PendulumStudy-v0-data.pk
+dataset:
+  python -m scripts.generate_dataset --algo sac --env pendulum --episodes 250 --weights ./weights/OffPolicy-SAC-PendulumStudy-v0-weights.pt --suffix OffPolicy
 
-dqn:
-  python -m scripts.dqn_test --episodes 500
+offline:
+  python -m scripts.offline_evaluate --algo afu --env pendulum
 
 test:
   pytest
