@@ -23,6 +23,7 @@ from afu.experiments.hybrid_policy import HybridPolicy
 from afu.experiments.optimal_off_policy import OptimalOffPolicy
 from afu.experiments.off_policy_network import OffPolicyNetwork
 from afu.experiments.on_policy_dataset import OnPolicyDataset
+from afu.experiments.off_policy_dataset import OffPolicyDataset
 import argparse
 
 from typing import Type, Any
@@ -57,6 +58,7 @@ EXPERIMENTS: dict[str, Type[Experiment]] = {
     "offlineonline": OfflineOnlineTransition,
     "randomwalkpolicy": RandomWalkPolicy,
     "onpolicydataset": OnPolicyDataset,
+    "offpolicydataset": OffPolicyDataset,
     "hybridpolicy": HybridPolicy,
     "optimaloffpolicy": OptimalOffPolicy,
     "offpolicynetwork": OffPolicyNetwork,
