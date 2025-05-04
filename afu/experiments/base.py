@@ -146,6 +146,7 @@ class Experiment(ABC):
 
         with open(dataset_filename, "wb") as f:
             pickle.dump(self.transitions, f)
+        print(f"Results saved to {dataset_filename}")
 
     def send_to_influxdb(self, metrics) -> None:
         """
