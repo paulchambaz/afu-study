@@ -95,9 +95,15 @@ class Experiment(ABC):
             total_reward = 0
 
             while not done:
+<<<<<<< HEAD
                 action = agent.select_action(state, evaluation=True)
                 action = self._scale_action(action, self.action_space)
                 next_state, reward, terminated, truncated, _ = env.step(action)
+=======
+                action = agent.select_action(observation, evaluation=True)
+                scaled_action = self._scale_action(action, self.action_space)
+                observation, reward, terminated, truncated, _ = env.step(scaled_action)
+>>>>>>> 828bb0aa7f23412cbf42a703c2dfc477c7bc17e2
                 done = terminated or truncated
                 total_reward += reward
                 state = next_state
@@ -234,6 +240,9 @@ class Experiment(ABC):
                 "n": 15,
                 "interval": 100,
                 "update_interval": 1000,
+                "batch_size": 50_000,
+                "offline_steps": 500,
+                "offline_interval": 10_000,
                 "total_steps": 50_000,
                 "seed": None,
             }

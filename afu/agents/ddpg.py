@@ -389,7 +389,7 @@ class DDPG:
                 "actor_hidden_size": 128,
                 "critic_hidden_size": 128,
                 "noise_std": 0.1,
-                "replay_size": 100_000,
+                "replay_size": 200_000,
                 "actor_lr": 3e-4,
                 "critic_lr": 3e-4,
                 "tau": 0.01,

@@ -5,7 +5,7 @@ from tqdm import tqdm  # type: ignore
 class OnPolicy(Experiment):
     def run(self, i, shared_results, results_lock, manager):
         training_steps = 0
-        agent = self.algo(self.hyperparameters, {})
+        agent = self.algo(self.hyperparameters)
 
         progress = tqdm(
             range(self.params.total_steps),
@@ -17,18 +17,16 @@ class OnPolicy(Experiment):
 
             while True:
                 action = agent.select_action(state)
-                action = self._scale_action(action, self.action_space)
+                scaled_action = self._scale_action(action, self.action_space)
 
                 next_state, reward, terminated, truncated, _ = agent.train_env.step(
-                    action
+                    scaled_action
                 )
                 done = terminated or truncated
 
                 agent.replay_buffer.push(state, action, reward, next_state, done)
 
-                # print(f"before update {training_steps}")
                 agent.update()
-                # print(f"after update {training_steps}")
 
                 state = next_state
                 agent.total_steps += 1

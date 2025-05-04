@@ -44,10 +44,10 @@ class HybridPolicy(Experiment):
                     action = np.random.uniform(
                         low=-1.0, high=1.0, size=self.action_space[0].shape
                     )
-                    action = self._scale_action(action, self.action_space)
+                    scaled_action = self._scale_action(action, self.action_space)
 
                     next_state, reward, terminated, truncated, _ = off_policy_env.step(
-                        action
+                        scaled_action
                     )
                     done = terminated or truncated
 
@@ -57,10 +57,10 @@ class HybridPolicy(Experiment):
                     state = on_policy_state
 
                     action = agent.select_action(state)
-                    action = self._scale_action(action, self.action_space)
+                    scaled_action = self._scale_action(action, self.action_space)
 
                     next_state, reward, terminated, truncated, _ = on_policy_env.step(
-                        action
+                        scaled_action
                     )
                     done = terminated or truncated
 

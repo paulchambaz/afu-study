@@ -3,11 +3,12 @@ import gymnasium as gym  # noqa
 from afu.agents.ddpg import DDPG
 from afu.agents.sac import SAC
 from afu.agents.afu import AFU
+from afu.agents.afu_beta import AFUBeta
 
 from afu.agents.sac_opti import SACOpti
 from afu.agents.afu_opti import AFUOpti
 
-from afu.agents.calql import CalQL
+from afu.agents.calql import CALQL
 from afu.agents.iql import IQL
 
 from afu.agents.afu_perrin import AFUPerrin
@@ -15,6 +16,7 @@ from afu.agents.afu_perrin import AFUPerrin
 from afu.experiments.base import Experiment
 from afu.experiments.off_policy import OffPolicy
 from afu.experiments.on_policy import OnPolicy
+from afu.experiments.offline import Offline
 from afu.experiments.offline_online_transition import OfflineOnlineTransition
 from afu.experiments.random_walk_policy import RandomWalkPolicy
 from afu.experiments.hybrid_policy import HybridPolicy
@@ -24,16 +26,16 @@ import argparse
 
 from typing import Type, Any
 
-
 ALGORITHMS: dict[str, Any] = {
     "ddpg": DDPG,
     "sac": SAC,
     "sacopti": SACOpti,
     "afu": AFU,
     "afuopti": AFUOpti,
+    "afubeta": AFUBeta,
     "afuperrin": AFUPerrin,
     "iql": IQL,
-    "calql": CalQL,
+    "calql": CALQL,
 }
 
 
@@ -51,11 +53,12 @@ ENVS: dict[str, str] = {
 EXPERIMENTS: dict[str, Type[Experiment]] = {
     "onpolicy": OnPolicy,
     "offpolicy": OffPolicy,
-    "offtoon": OfflineOnlineTransition,
+    "offlineonline": OfflineOnlineTransition,
     "randomwalkpolicy": RandomWalkPolicy,
     "hybridpolicy": HybridPolicy,
     "optimaloffpolicy": OptimalOffPolicy,
     "offpolicynetwork": OffPolicyNetwork,
+    "offline": Offline,
 }
 
 
