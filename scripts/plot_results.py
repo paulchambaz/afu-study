@@ -79,15 +79,11 @@ def plot_histograms(experiment_results, colors_dict, experiment, env):
         plt.show()
 
 
-# {'hidden_size': 45, 'gradient_reduction': 0.8307174224936501, 'learning_rate': 0.00043726536490416824, 'tau': 0.39425219584296994, 'replay_size': 308891, 'batch_size': 211, 'env_name': 'PendulumStudy-v0'}
-
-
 def main():
-    # algorithms = ["DDPG", "SAC", "AFU"]
-    # algorithms = ["SAC", "AFU"]
-    algorithms = ["IQL"]
-    # experiments = ["OffPolicy", "OnPolicy", "RandomWalkPolicy", "OptimalOffPolicy"]
-    experiments = ["Offline-AFUOnPolicyDataset"]
+    algorithms = ["SAC", "AFU"]
+    # algorithms = ["AFU", "CALQL", "SAC"]
+    experiments = ["OffPolicy", "OnPolicy"]
+    # experiments = ["Offline"]
 
     env = "Pendulum"
     env_dict = {
@@ -103,6 +99,7 @@ def main():
         "SAC": "#38B000",
         "AFU": "#023E8A",
         "IQL": "#F3722C",
+        "CALQL": "#2cF372",
     }
 
     for experiment in experiments:
@@ -117,9 +114,6 @@ def main():
                 continue
 
         if experiment_results:
-            # if experiment == "OnPolicy":
-            #     print(experiment_results["AFUPerrin"]["hyperparameter"])
-
             display_results(
                 experiment_results,
                 colors_dict,
