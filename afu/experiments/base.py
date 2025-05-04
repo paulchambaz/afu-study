@@ -121,6 +121,7 @@ class Experiment(ABC):
     def save_results(self) -> None:
         Path("results").mkdir(exist_ok=True)
         Path("weights").mkdir(exist_ok=True)
+        Path("dataset").mkdir(exist_ok=True)
         policy_type = self.__class__.__name__
         algo_name = self.algo.__name__
 
@@ -140,7 +141,7 @@ class Experiment(ABC):
         print(f"Agent weights saved to {weights_filename}")
 
         dataset_filename = (
-            f"datasets/{policy_type}-{algo_name}-{self.params.env_name}-dataset.pk"
+            f"dataset/{policy_type}-{algo_name}-{self.params.env_name}-dataset.pk"
         )
 
         with open(dataset_filename, "wb") as f:
