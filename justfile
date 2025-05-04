@@ -1,8 +1,5 @@
 run *ARGS:
-  python -m scripts.evaluate --algo afu --env pendulum --experiment onpolicy --run 5 --steps 100000 --trials 0
-  python -m scripts.evaluate --algo afu --env pendulum --experiment offpolicy --run 5 --steps 100000 --trials 0
-  python -m scripts.evaluate --algo sac --env pendulum --experiment onpolicy --run 5 --steps 100000 --trials 0
-  python -m scripts.evaluate --algo sac --env pendulum --experiment offpolicy --run 5 --steps 100000 --trials 0
+  python -m scripts.evaluate --algo afu --env pendulum --experiment onpolicydataset --run 1 --steps 100000 --trials 0
 
 run-tiny:
   python -m scripts.evaluate --algo iql --env pendulum --experiment offline --run 1 --steps 2000 --trials 0
@@ -16,16 +13,11 @@ plot *ARGS:
 demo:
   python -m scripts.demo --algo afu --env pendulum --episodes 2000 --weights ./weights/OffPolicy-AFU-PendulumStudy-v0-weights.pt
 
-<<<<<<< HEAD
 dataset:
   python -m scripts.generate_dataset --algo sac --env pendulum --episodes 250 --weights ./weights/OffPolicy-SAC-PendulumStudy-v0-weights.pt --suffix OffPolicy
 
 offline:
   python -m scripts.offline_evaluate --algo afu --env pendulum
-=======
-generate:
-  python -m scripts.generate_dataset --algo afu --env pendulum --episodes 250 --weights ./weights/OnPolicy-AFU-PendulumStudy-v0-weights.pt --output ./dataset/OnPolicy-AFU-PendulumStudy-v0-data.pk
->>>>>>> 828bb0aa7f23412cbf42a703c2dfc477c7bc17e2
 
 test:
   pytest

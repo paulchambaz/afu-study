@@ -79,15 +79,11 @@ def plot_histograms(experiment_results, colors_dict, experiment, env):
         plt.show()
 
 
-# {'hidden_size': 45, 'gradient_reduction': 0.8307174224936501, 'learning_rate': 0.00043726536490416824, 'tau': 0.39425219584296994, 'replay_size': 308891, 'batch_size': 211, 'env_name': 'PendulumStudy-v0'}
-
-
 def main():
-    # algorithms = ["DDPG", "SAC", "AFU"]
-    # algorithms = ["SAC", "AFU"]
-    algorithms = ["AFU", "CALQL", "SAC"]
-    # experiments = ["OffPolicy", "OnPolicy", "RandomWalkPolicy", "OptimalOffPolicy"]
-    experiments = ["Offline"]
+    algorithms = ["SAC", "AFU"]
+    # algorithms = ["AFU", "CALQL", "SAC"]
+    experiments = ["OffPolicy", "OnPolicy"]
+    # experiments = ["Offline"]
 
     env = "Pendulum"
     env_dict = {
