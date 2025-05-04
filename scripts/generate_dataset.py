@@ -2,8 +2,8 @@ import argparse
 import gymnasium as gym
 import pickle
 import numpy as np
-from tqdm import tqdm
 from pathlib import Path
+from tqdm import tqdm
 
 from afu.agents.ddpg import DDPG
 from afu.agents.sac import SAC
@@ -41,51 +41,56 @@ def scale_action(action, target_space):
     return scaled
 
 
-def generate_dataset(env_name, agent, suffix="", episodes=5):
-    env = gym.make(env_name)
+def collect_episodes(env_name, agent, episodes=100, render_mode=None):
+    env = gym.make(env_name, render_mode=render_mode)
     action_space = env.unwrapped.get_action_space()
-    print(action_space)
+
+    # Create a simple list to store all transitions
+    transitions = []
 
     total_rewards = []
-    dataset = []
+    total_steps = 0
 
     for episode in tqdm(range(episodes)):
-        state, _ = env.reset()
+        observation, _ = env.reset()
         done = False
         episode_reward = 0
         step = 0
 
         while not done:
-            action = agent.select_action(state, evaluation=True)
+            action = agent.select_action(observation, evaluation=False)
             scaled_action = scale_action(action, action_space)
 
-            next_state, reward, terminated, truncated, _ = env.step(scaled_action)
+            next_observation, reward, terminated, truncated, _ = env.step(scaled_action)
             done = terminated or truncated
+
+            transitions.append((observation, action, reward, next_observation, done))
+
+            observation = next_observation
             episode_reward += reward
-
-            transition = (state, action, reward, next_state, done)
-            # print(transition)
-            dataset.append(transition)
-
-            state = next_state
-
             step += 1
+            total_steps += 1
 
         total_rewards.append(episode_reward)
 
     env.close()
 
-    agent_name = agent.__class__.__name__
-    save_path = Path(f"dataset/{agent_name}-{env_name}-{suffix}-data.pk")
+    # Print summary statistics
+    print(f"\nCollection completed. Total steps: {total_steps}")
+    print(f"Average reward over {episodes} episodes: {np.mean(total_rewards):.4f}")
+    print(f"Min reward: {np.min(total_rewards):.4f}")
+    print(f"Max reward: {np.max(total_rewards):.4f}")
+    print(f"Standard deviation: {np.std(total_rewards):.4f}")
 
-    save_path.parent.mkdir(parents=True, exist_ok=True)
-
-    print(len(dataset))
-
-    with open(save_path, "wb") as f:
-        pickle.dump(dataset, f)
-
-    print(f"Dataset saved to {save_path}")
+    return transitions, {
+        "total_steps": total_steps,
+        "num_episodes": episodes,
+        "avg_reward": float(np.mean(total_rewards)),
+        "min_reward": float(np.min(total_rewards)),
+        "max_reward": float(np.max(total_rewards)),
+        "std_reward": float(np.std(total_rewards)),
+        "rewards": total_rewards,
+    }
 
 
 def load_agent_from_weights(env_name, algo_class, weights_path, hyperparameters=None):
@@ -108,7 +113,7 @@ def load_results_file(results_path):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Visualize trained agent in environment"
+        description="Collect expert experience data from trained agent"
     )
 
     # Basic arguments
@@ -124,10 +129,13 @@ def main():
         type=str,
         choices=ENVS.keys(),
         required=True,
-        help="Environment to visualize",
+        help="Environment to run",
     )
     parser.add_argument(
-        "--episodes", type=int, default=5, help="Number of episodes to run"
+        "--episodes", type=int, default=100, help="Number of episodes to run"
+    )
+    parser.add_argument(
+        "--output", type=str, default="expert_data.pkl", help="Output file path"
     )
 
     # Weights and results loading
@@ -137,12 +145,6 @@ def main():
         "--results",
         type=str,
         help="Path to results file (will also load associated weights)",
-    )
-
-    parser.add_argument(
-        "--suffix",
-        type=str,
-        help="Suffix for the name of the file saved",
     )
 
     args = parser.parse_args()
@@ -168,12 +170,26 @@ def main():
     else:
         agent = load_agent_from_weights(env_name, algo_class, args.weights)
 
-    # Run visualization
-    generate_dataset(
-        env_name=env_name,
-        agent=agent,
-        episodes=args.episodes,
-        suffix=args.suffix,
+    # Collect episodes and save to file
+    transitions, stats = collect_episodes(
+        env_name=env_name, agent=agent, episodes=args.episodes
+    )
+
+    # Save transitions to pickle file
+    output_path = Path(args.output)
+    dataset = {
+        "transitions": transitions,
+        "env_name": env_name,
+        "algo": args.algo,
+        "stats": stats,
+        "hyperparameters": hyperparameters if args.results else None,
+    }
+
+    with open(output_path, "wb") as f:
+        pickle.dump(dataset, f)
+
+    print(
+        f"Successfully saved dataset with {len(transitions)} transitions to {output_path}"
     )
 
 

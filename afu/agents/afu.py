@@ -581,7 +581,7 @@ class AFU:
                 "v_lr": 3e-4,
                 "policy_lr": 3e-4,
                 "alpha_lr": 3e-4,
-                "replay_size": 100_000,
+                "replay_size": 200_000,
                 "batch_size": 256,
                 "gradient_reduction": 0.5,
                 "tau": 0.01,
