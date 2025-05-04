@@ -90,16 +90,17 @@ class Experiment(ABC):
         results = []
 
         for _ in range(n):
-            observation, _ = env.reset()
+            state, _ = env.reset()
             done = False
             total_reward = 0
 
             while not done:
-                action = agent.select_action(observation, evaluation=True)
+                action = agent.select_action(state, evaluation=True)
                 action = self._scale_action(action, self.action_space)
-                observation, reward, terminated, truncated, _ = env.step(action)
+                next_state, reward, terminated, truncated, _ = env.step(action)
                 done = terminated or truncated
                 total_reward += reward
+                state = next_state
 
             results.append(total_reward)
 

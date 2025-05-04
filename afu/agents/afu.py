@@ -576,7 +576,7 @@ class AFU:
     def _get_params_defaults(cls) -> OmegaConf:
         return OmegaConf.create(
             {
-                "hidden_size": 1024,
+                "hidden_size": 256,
                 "q_lr": 3e-4,
                 "v_lr": 3e-4,
                 "policy_lr": 3e-4,
