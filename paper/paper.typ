@@ -323,7 +323,9 @@ The code for all algorithms and experiments is available at #link("https://githu
 
 === Implementation Notes on CAL-QL
 
-In our review of the CALQL implementation presented in the original paper, we identified two minor inconsistencies in the provided pseudocode that we corrected in our implementation:
+In our review of the CALQL implementation presented in the original paper, we
+identified two minor inconsistencies in the provided pseudocode that we
+corrected in our implementation:
 
 1. In the target Q-value calculation, the original code shows:
 
@@ -343,13 +345,42 @@ target_qval = target_critic(batch['next_observations'], next_pi_actions)
 q_rand_is = critic(batch['observations'], random_actions) - random_pi
 ```
 
-For consistency with the log-probabilities used elsewhere in the algorithm, this should instead use the logarithm of the uniform density:
+For consistency with the log-probabilities used elsewhere in the algorithm,
+this should instead use the logarithm of the uniform density:
 
 ```
 q_rand_is = critic(batch['observations'], random_actions) - log(random_pi)
 ```
 
-These corrections align with both the mathematical principles of the algorithm and the authors' actual implementation in their source code repository. While these inconsistencies are minor and likely typographical in nature, they are worth noting for those aiming to implement CALQL correctly.
+These corrections align with both the mathematical principles of the algorithm
+and the authors' actual implementation in their source code repository. While
+these inconsistencies are minor and likely typographical in nature, they are
+worth noting for those aiming to implement CALQL correctly.
+
+=== Implementation Notes on IQL
+
+In our review of the Implicit Q-Learning implementation presented in the
+original paper, we identified a minor inconsistency in the provided formula
+that we corrected in our implementation:
+
+The policy loss function in Equation (7) of the paper shows:
+
+$
+L_pi (phi.alt) = EE_((s,a)~D) \
+[ exp(beta (Q_theta (s, a) - V_psi (s))) log pi_phi.alt (a | s) ]
+$
+
+However, since this is a loss function that should be minimized during optimization, the correct formula should include a negative sign:
+
+$
+L_pi (phi.alt) = EE_((s,a)~D) \
+[ exp(beta (Q_theta (s, a) - V_psi (s))) log pi_phi.alt (a | s) ]
+$
+
+This correction aligns with the mathematical principles of advantage-weighted
+regression, where the objective is to maximize the likelihood of actions with
+high advantages. While this inconsistency is minor and likely typographical in
+nature, it's worth noting for those aiming to implement IQL correctly.
 
 == Appendix C
 
