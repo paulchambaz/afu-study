@@ -151,7 +151,10 @@ class CALQL:
         self.n = self.params.n
         self.total_steps = 0
 
-        self._initialize_mc_returns(self.params.dataset_files)
+        if "dataset_files" in self.params:
+            self._initialize_mc_returns(self.params.dataset_files)
+        else:
+            self.mc_returns = {}
 
     def _initialize_mc_returns(self, dataset_files):
         dataset = []
@@ -476,7 +479,7 @@ class CALQL:
         self.policy_network.load_state_dict(save_dict["policy_network_state"])
 
         # Restore optimizer states
-        self.q_optimizer.load_state_dict(save_dict["q_optimizer_statvwye"])
+        self.q_optimizer.load_state_dict(save_dict["q_optimizer_state"])
         self.policy_optimizer.load_state_dict(save_dict["policy_optimizer_state"])
         self.alpha_optimizer.load_state_dict(save_dict["alpha_optimizer_state"])
 

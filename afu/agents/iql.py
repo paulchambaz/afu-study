@@ -118,7 +118,6 @@ class PolicyNetwork(Agent):
         ).sum(dim=-1)
 
         log_prob = normal_log_prob - torch.log(1 - action.pow(2) + 1e-6).sum(dim=-1)
-
         self.set(("log_prob", t), log_prob)
 
 
@@ -281,13 +280,13 @@ class IQL:
         q1_workspace = Workspace()
         q1_workspace.set("env/env_obs", 0, states)
         q1_workspace.set("action", 0, actions)
-        self.q_network1(q1_workspace, t=0)
+        self.q_target_network1(q1_workspace, t=0)
         q1_values = q1_workspace.get("q1/q_value", 0)
 
         q2_workspace = Workspace()
         q2_workspace.set("env/env_obs", 0, states)
         q2_workspace.set("action", 0, actions)
-        self.q_network2(q2_workspace, t=0)
+        self.q_target_network2(q2_workspace, t=0)
         q2_values = q2_workspace.get("q2/q_value", 0)
 
         q_values = torch.min(q1_values, q2_values)
@@ -341,7 +340,7 @@ class IQL:
         q_targets = rewards + self.gamma * (1.0 - dones) * v_targets
 
         # Compute the Q-value loss
-        q_loss = 0.5 * torch.mean((q_values - q_targets.detach()) ** 2)
+        q_loss = torch.mean((q_values - q_targets.detach()) ** 2)
 
         return q_loss
 

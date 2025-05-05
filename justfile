@@ -20,7 +20,7 @@ dataset:
   python -m scripts.generate_dataset --algo sac --env pendulum --episodes 250 --weights ./weights/OffPolicy-SAC-PendulumStudy-v0-weights.pt --suffix OffPolicy
 
 figure:
-  python -m scripts.figure --algo afu --env pendulum --weights ./weights/OffPolicy-AFU-PendulumStudy-v0-weights.pt
+  python -m scripts.figure --algo iql --env pendulum --weights ./weights/OfflineOnlineTransition-IQL-PendulumStudy-v0-weights.pt
 
 test:
   pytest

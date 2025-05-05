@@ -13,11 +13,15 @@ from bbrl.workspace import Workspace  # type: ignore
 from afu.agents.ddpg import DDPG
 from afu.agents.sac import SAC
 from afu.agents.afu import AFU
+from afu.agents.calql import CALQL
+from afu.agents.iql import IQL
 
 ALGORITHMS = {
     "ddpg": DDPG,
     "sac": SAC,
     "afu": AFU,
+    "calql": CALQL,
+    "iql": IQL,
 }
 
 ENVS = {
@@ -120,17 +124,7 @@ def main():
 
             state = torch.tensor([[x, y, velocity]])
 
-            v1_workspace = Workspace()
-            v1_workspace.set("env/env_obs", 0, state)
-            agent.v_network1(v1_workspace, t=0)
-            v1_values = v1_workspace.get("v1/v_value", 0)
-
-            v2_workspace = Workspace()
-            v2_workspace.set("env/env_obs", 0, state)
-            agent.v_network2(v2_workspace, t=0)
-            v2_values = v2_workspace.get("v2/v_value", 0)
-
-            v_value = min(v1_values, v2_values)
+            v_value = get_v_value(agent, state)
             v_values[j, i] = v_value
 
             policy_workspace = Workspace()
@@ -161,6 +155,48 @@ def main():
     plt.colorbar(im2, label="Action")
 
     plt.show()
+
+
+def get_v12_value(agent, state):
+    v1_workspace = Workspace()
+    v1_workspace.set("env/env_obs", 0, state)
+    agent.v_network1(v1_workspace, t=0)
+    v1_values = v1_workspace.get("v1/v_value", 0)
+
+    v2_workspace = Workspace()
+    v2_workspace.set("env/env_obs", 0, state)
+    agent.v_network2(v2_workspace, t=0)
+    v2_values = v2_workspace.get("v2/v_value", 0)
+
+    v_value = min(v1_values, v2_values)
+
+    return v_value
+
+
+def get_v_value(agent, state):
+    v_workspace = Workspace()
+    v_workspace.set("env/env_obs", 0, state)
+    agent.v_network(v_workspace, t=0)
+    v_value = v_workspace.get("v/v_value", 0)
+
+    return v_value
+
+
+def get_v_q_value(agent, state):
+    max_q = float("-inf")
+    for i in range(100):
+        action = torch.tensor([[((i / 100) * 2 - 1) * 2]])
+
+        q_workspace = Workspace()
+        q_workspace.set("env/env_obs", 0, state)
+        q_workspace.set("action", 0, action)
+        agent.q_network(q_workspace, t=0)
+        q_values = q_workspace.get("q/q_value", 0)
+
+        if q_values > max_q:
+            max_q = q_values
+
+    return max_q
 
 
 if __name__ == "__main__":

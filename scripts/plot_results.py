@@ -118,7 +118,7 @@ def main():
                 experiment_results,
                 colors_dict,
                 f"{env} {experiment} Training Progress",
-                N=4 if experiment == "OnPolicy" else 1,
+                N=8,
             )
 
             plot_histograms(experiment_results, colors_dict, experiment, env)
