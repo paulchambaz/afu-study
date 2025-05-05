@@ -290,8 +290,6 @@ We also evaluated AFU in an Offline-to-Online setting, where the agent first lea
 
 === Experimental Details
 
-==== Environment Wrappers
-
 The custom environment wrappers used in this study include the following methods:
 - `_set_state`: Allows resetting the environment to a specific state.
 - `get_obs`: Retrieves the current observation.
@@ -300,7 +298,7 @@ The custom environment wrappers used in this study include the following methods
 
 These wrappers were implemented to ensure compatibility with the experiments.
 
-==== Hyperparameters
+=== Hyperparameters
 
 The following hyperparameters were used for the experiments:
 
@@ -319,7 +317,7 @@ The following hyperparameters were used for the experiments:
 
 === Reproducibility
 
-The code for all algorithms and experiments is available at #link("https://github.com/paulchambaz/afu-study"). The repository includes detailed instructions for setting up the environment and running the experiments.
+The code for all algorithms and experiments is available at #link("https://github.com/paulchambaz/afu-study"). The repository includes detailed instructions for setting up the environment and running the experiments. The code is licensed under the GPLv3 license and freely available.
 
 == Appendix B
 
@@ -409,14 +407,14 @@ The first is a Q-network, which does a forward pass on a state-action pair and e
 
 $
 L_Q (psi) = EE_((s, a, r, s') ~ cal(B)) \
-[ (Q_psi (s, a) - r - gamma min_{i in {1,2}} V_(phi_i') (s'))^2 ]
+[ (Q_psi (s, a) - r - gamma min_(i in {1,2}) V_(phi_i') (s'))^2 ]
 $
 
 The second is a combined value and advantage loss for each network pair, which updates both value and advantage networks based on the relation $Q(s,a) = V(s) + A(s,a)$. To update their weights, we compute:
 
 $
 L_("VA") (phi_i, xi_i) = EE_((s, a, r, s') ~ cal(B)) \
-[ Z(Upsilon_i^a (s) - r - gamma min_{i in {1,2}} V_(phi_i') (s'), A_(xi_i) (s,a)) ]
+[ Z(Upsilon_i^a (s) - r - gamma min_(i in {1,2}) V_(phi_i') (s'), A_(xi_i) (s,a)) ]
 $
 
 where:
