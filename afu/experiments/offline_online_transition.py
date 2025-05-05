@@ -8,10 +8,8 @@ class OfflineOnlineTransition(Experiment):
         training_step = 0
 
         dataset_files = [
-            "dataset/OnPolicy-AFU-PendulumStudy-v0-data.pk",
-            "dataset/OffPolicy-AFU-PendulumStudy-v0-data.pk",
-            "dataset/OnPolicy-SAC-PendulumStudy-v0-data.pk",
-            "dataset/OffPolicy-SAC-PendulumStudy-v0-data.pk",
+            "dataset/OffPolicyDataset-AFU-PendulumStudy-v0-dataset.pk",
+            "dataset/OnPolicyDataset-SAC-PendulumStudy-v0-dataset.pk",
         ]
 
         self.hyperparameters["dataset_files"] = dataset_files
@@ -20,15 +18,16 @@ class OfflineOnlineTransition(Experiment):
         for file in dataset_files:
             with open(file, "rb") as f:
                 results = pickle.load(f)
-                dataset.extend(results["transitions"])
+                dataset.extend(results)
 
         agent = self.algo(self.hyperparameters)
 
         progress = tqdm(dataset, desc=f"Offline Training {i}/{self.params.n}")
 
-        for state, action, reward, next_state, done in progress:
-            agent.replay_buffer.push(state, action, reward, next_state, done)
+        for state, action, reward, next_state, done in dataset:
+            agent.replay_buffer.push(state, action * 0.5, reward, next_state, done)
 
+        for _ in progress:
             agent.update()
             agent.total_steps += 1
             training_step += 1
@@ -45,8 +44,6 @@ class OfflineOnlineTransition(Experiment):
                         shared_results["rewards"][id] = current_results + eval_results
 
                     progress.set_postfix({"eval": self._get_stats(eval_results)})
-
-                break
 
         progress = tqdm(
             range(self.params.total_steps),
