@@ -1,8 +1,9 @@
 run *ARGS:
   # python -m scripts.evaluate --algo calql --env pendulum --experiment offlineonline --run 5 --steps 400000 --trials 0
-  python -m scripts.evaluate --algo iql --env pendulum --experiment offlineonline --run 5 --steps 400000 --trials 0
+  # python -m scripts.evaluate --algo iql --env pendulum --experiment offlineonline --run 5 --steps 400000 --trials 0
   # python -m scripts.evaluate --algo sac --env pendulum --experiment offlineonline --run 5 --steps 400000 --trials 0
   # python -m scripts.evaluate --algo afu --env pendulum --experiment offlineonline --run 5 --steps 400000 --trials 0
+  python -m scripts.evaluate --algo sac --env lunarlander --experiment onpolicydataset --run 1 --steps 200000 --trials 0
 
 run-tiny:
   python -m scripts.evaluate --algo afu --env pendulum --experiment onpolicy --run 1 --steps 500 --trials 0
@@ -20,7 +21,7 @@ dataset:
   python -m scripts.generate_dataset --algo sac --env pendulum --episodes 250 --weights ./weights/OffPolicy-SAC-PendulumStudy-v0-weights.pt --suffix OffPolicy
 
 figure:
-  python -m scripts.figure --algo iql --env pendulum --weights ./weights/OfflineOnlineTransition-IQL-PendulumStudy-v0-weights.pt
+  python -m scripts.figure --algo calql --env pendulum --weights ./weights/OfflineOnlineTransition-CALQL-PendulumStudy-v0-weights.pt
 
 test:
   pytest
