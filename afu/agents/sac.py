@@ -77,9 +77,7 @@ class PolicyNetwork(Agent):
         obs = self.get(("env/env_obs", t))
 
         # compute mean from the network
-        # print(f"{obs=}")
         mean = self.model(obs)
-        # print(f"{mean=}")
         log_std = self.log_std.expand_as(mean)
         log_std = torch.clamp(log_std, self.log_std_min, self.log_std_max)
 
@@ -169,9 +167,6 @@ class SAC:
             hidden_dims=hidden_dims,
             action_dim=self.action_dim,
         )
-        print("IQL policy model weights:")
-        for name, param in self.policy_network.model.named_parameters():
-            print(f"{name}: {param.data.abs().mean()}, {torch.isnan(param.data).any()}")
 
         # Temperature
         self.log_alpha = nn.Parameter(torch.zeros(1, requires_grad=True))
@@ -270,9 +265,6 @@ class SAC:
     def _compute_v_loss(
         self,
         states: torch.Tensor,
-        actions: torch.Tensor,
-        rewards: torch.Tensor,
-        next_states: torch.Tensor,
         dones: torch.Tensor,
     ) -> torch.Tensor:
         """

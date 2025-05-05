@@ -193,8 +193,35 @@ by adaptively adjusting the gradient flow depending on whether the current
 estimate falls short of the target.
 
 ==== IQL
+Implicit Q-Learning approaches offline reinforcement learning by avoiding
+direct querying of the Q-function with unseen actions during training. This
+algorithm uses expectile regression to estimate the maximum value of
+Q-functions without requiring access to the optimal action. IQL operates on
+three main components: a value network, two Q-networks to reduce overestimation
+bias, and a policy network. The value function is trained using expectile
+regression at a specific quantile $tau$, enabling it to approximate the maximum
+of the Q-function distribution. The policy is then extracted through
+advantage-weighted regression, allowing it to favor actions with higher
+advantages while remaining within the data distribution. This approach
+effectively addresses the distribution shift problem in offline RL by never
+evaluating actions outside the training dataset, making it well-suited for
+purely offline learning scenarios but potentially limiting its adaptability
+during transitions to online learning.
 
 ==== Cal-QL
+Calibrated Q-Learning builds upon conservative Q-learning approaches for
+offline reinforcement learning while enabling smoother transition to online
+learning. CALQL employs a Q-network, a target network, and a policy network
+similar to SAC's stochastic policy. What distinguishes CALQL is its use of
+reference values precomputed from the dataset using Monte Carlo returns, which
+serve as a calibration mechanism. The learning objective combines a standard
+temporal difference error with a conservative regularization term that
+explicitly penalizes out-of-distribution actions. This calibration helps
+prevent both underestimation and overestimation of Q-values, addressing a key
+challenge in offline-to-online transition where traditional conservative
+approaches tend to be overly pessimistic. CALQL's balanced approach allows it
+to maintain sufficient conservatism during offline learning while facilitating
+effective exploration when transitioning to online learning.
 
 ==== Off-policy learning experimental setup
 Our first experiment aims to evaluate whether AFU can truly learn from randomly
@@ -296,7 +323,85 @@ The code for all algorithms and experiments is available at #link("https://githu
 
 == Appendix B
 
-=== Cal-QL errors
+=== Implementation Notes on CAL-QL
 
-// TODO: a ajouter les erreurs
+In our review of the CALQL implementation presented in the original paper, we identified two minor inconsistencies in the provided pseudocode that we corrected in our implementation:
 
+1. In the target Q-value calculation, the original code shows:
+
+```
+target_qval = target_critic(batch['observations'], next_pi_actions)
+```
+
+However, this should use the next observations according to the Bellman equation:
+
+```
+target_qval = target_critic(batch['next_observations'], next_pi_actions)
+```
+
+2. In the random actions Q-value calculation, the original code indicates:
+
+```
+q_rand_is = critic(batch['observations'], random_actions) - random_pi
+```
+
+For consistency with the log-probabilities used elsewhere in the algorithm, this should instead use the logarithm of the uniform density:
+
+```
+q_rand_is = critic(batch['observations'], random_actions) - log(random_pi)
+```
+
+These corrections align with both the mathematical principles of the algorithm and the authors' actual implementation in their source code repository. While these inconsistencies are minor and likely typographical in nature, they are worth noting for those aiming to implement CALQL correctly.
+
+== Appendix C
+
+=== Implementation detail of DDPG
+
+DDPG optimizes a continuous control policy using deterministic actions and off-policy learning. It uses two neural networks with parameters $theta$ and $phi$: a critic (Q-network) and an actor (policy network). The critic $Q_theta (s, a)$ estimates expected returns for state-action pairs, while the actor $mu_phi (s)$ maps states directly to deterministic actions. Target networks with parameters $theta'$ and $phi'$ stabilize learning through soft updates with rate $tau$. Exploration during training uses Gaussian noise $cal(N) (0, sigma^2)$ with standard deviation $sigma$. Experiences $(s, a, r, s')$ are stored in a replay buffer $cal(B)$ of size $N$, from which we sample mini-batches of size $B$ for updates.
+
+
+The first is a Q-network, which does a forward pass on a state-action pair and estimates the expected reward that the agent gets after doing a given action in a given state. To update its weights, we compute the following loss:
+
+$
+L_Q (theta) = EE_((s, a, r, s')~ B) \
+[ (Q_theta (s, a) - (r + gamma Q_(theta') (s', mu_(phi')(s'))))^2 ]
+$
+
+The second is a policy network (Actor), which outputs deterministic actions for any given state. Unlike SAC's stochastic policy, it directly maps states to optimal actions without probability distributions. Using a tanh activation to bound actions within [-1, 1], the policy is optimized by maximizing the expected Q-value:
+
+$
+L_(mu) (phi) = -EE_(s ~ B) [ Q_(theta) (s, mu_(phi) (s)) ]
+$
+
+=== Implementation detail of SAC
+
+SAC implements an actor-critic method with entropy regularization for improved exploration. It uses five neural networks: twin critics with parameters $theta_1$ and $theta_2$ to reduce overestimation bias, a value network with parameters $psi$, a target value network with parameters $psi'$, and a policy network with parameters $phi$. The temperature parameter $alpha$ controls exploration, with target entropy set to $-|cal(A)|$ where $cal(A)$ is the action space. Experience tuples $(s, a, r, s')$ are stored in a replay buffer $cal(B)$ of capacity $N$, from which mini-batches of size $B$ are sampled. Networks are updated using learning rates $l_Q$, $l_V$, $l_pi$, and $l_alpha$ for critics, value network, policy, and temperature respectively, with target networks soft-updated at rate $tau$.
+
+The first is a V-network, which does a forward pass on a given state and estimates the expected reward an agent can gain in the state. To update its weights, we compute the following loss:
+
+$
+L_V (psi) = EE_((s, a, r, s')~B) \ [ (V_psi (s) -
+(min Q_theta_i (s, a_s) - alpha log(pi_phi (a_s | s))))^2 ]
+$
+
+The second is a Q-network, which does a forward pass on a state-action pair and estimates the expected reward that the agent gets after doing a given action in a given state. To update its weights, we compute the following loss:
+
+$
+L_Q (theta_i) = EE_((s, a, r, s')~B) \
+[ (Q_(theta_i) (s, a) - r - gamma V_(psi^"target") (s'))^2 ]
+$
+
+The last is a policy network, which parameterizes a Gaussian distribution over
+actions. It outputs mean actions and learns log standard deviations as
+parameters. Using the reparameterization trick and tanh squashing for bounded
+actions, the policy is optimized by minimizing:
+
+$
+L_pi (phi.alt) = EE [ alpha log(pi_(phi.alt) (a_s | s)) - Q_(theta_i) (s, a_s) ]
+$
+
+=== Implementation detail of AFU
+
+=== Implementation detail of IQL
+
+=== Implementation detail of CAL-QL
