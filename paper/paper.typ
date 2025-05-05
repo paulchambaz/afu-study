@@ -459,3 +459,35 @@ $
 where $beta$ controls the temperature and we clip advantages to be non-positive to avoid overoptimism.
 
 === Implementation detail of CAL-QL
+Calibrated Q-learning extends offline RL with a conservative regularization approach. It uses three neural networks: a critic (Q-network) with parameters $psi$, its target version with parameters $psi'$, and a policy network with parameters $phi$. The temperature parameter $alpha > 0$ controls the conservative regularization strength, while the sampling parameter $n$ determines how many random and policy-sampled actions are used for regularization. The algorithm incorporates Monte Carlo returns from a dataset as reference values $V_mu (s)$ to mitigate overestimation. Experience tuples $(s, a, r, s')$ are stored in a replay buffer $cal(B)$ of capacity $N$, from which mini-batches of size $B$ are sampled. Networks are updated using learning rates $l_Q$, $l_\pi$, and $l_alpha$ for critic, policy, and temperature respectively, with target networks soft-updated at rate $tau$.
+
+The first is a Q-network loss, which combines a standard TD loss with a conservative regularization term:
+
+$
+L_Q (psi) = L_Q^("TD") (psi) + alpha . L_Q^("CON") (psi)
+$
+
+The TD loss follows the standard form:
+$
+L_Q^("TD") (psi) = EE_((s,a,r,s') ~ cal(B)) \
+[(Q_psi (s, a) - r - gamma Q_(psi') (s', a_(s')))^2]
+$
+
+The conservative regularization term penalizes Q-value overestimation:
+
+$
+L_Q^("CON") (psi)
+= EE_(s ~ cal(B)) \
+[log(
+sum_(i=1)^n exp(Q_psi (s, a_R^i) - log(0.5^(|cal(A)|))) \
+  + sum_(i=1)^n exp(max(V_mu (s), Q_psi (s, a_s^i) - log pi_phi (a_s^i|s)))) \
+- Q_psi (s, a)]
+$
+
+where $a_R^i$ are random actions sampled uniformly and $V_mu (s)$ are reference values from Monte Carlo returns.
+
+The policy network is optimized through the standard SAC policy loss:
+
+$
+L_pi (phi) = EE_(s ~ cal(B)) [alpha log(pi_phi (a_s | s)) - Q_psi (s, a_s)]
+$
