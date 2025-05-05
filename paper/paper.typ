@@ -291,8 +291,6 @@ We also evaluated AFU in an Offline-to-Online setting, where the agent first lea
 
 === Experimental Details
 
-==== Environment Wrappers
-
 The custom environment wrappers used in this study include the following methods:
 - `_set_state`: Allows resetting the environment to a specific state.
 - `get_obs`: Retrieves the current observation.
@@ -301,7 +299,7 @@ The custom environment wrappers used in this study include the following methods
 
 These wrappers were implemented to ensure compatibility with the experiments.
 
-==== Hyperparameters
+=== Hyperparameters
 
 The following hyperparameters were used for the experiments:
 
@@ -320,13 +318,15 @@ The following hyperparameters were used for the experiments:
 
 === Reproducibility
 
-The code for all algorithms and experiments is available at #link("https://github.com/paulchambaz/afu-study"). The repository includes detailed instructions for setting up the environment and running the experiments.
+The code for all algorithms and experiments is available at #link("https://github.com/paulchambaz/afu-study"). The repository includes detailed instructions for setting up the environment and running the experiments. The code is licensed under the GPLv3 license and freely available.
 
 == Appendix B
 
 === Implementation Notes on CAL-QL
 
-In our review of the CALQL implementation presented in the original paper, we identified two minor inconsistencies in the provided pseudocode that we corrected in our implementation:
+In our review of the CALQL implementation presented in the original paper, we
+identified two minor inconsistencies in the provided pseudocode that we
+corrected in our implementation:
 
 1. In the target Q-value calculation, the original code shows:
 
@@ -346,13 +346,42 @@ target_qval = target_critic(batch['next_observations'], next_pi_actions)
 q_rand_is = critic(batch['observations'], random_actions) - random_pi
 ```
 
-For consistency with the log-probabilities used elsewhere in the algorithm, this should instead use the logarithm of the uniform density:
+For consistency with the log-probabilities used elsewhere in the algorithm,
+this should instead use the logarithm of the uniform density:
 
 ```
 q_rand_is = critic(batch['observations'], random_actions) - log(random_pi)
 ```
 
-These corrections align with both the mathematical principles of the algorithm and the authors' actual implementation in their source code repository. While these inconsistencies are minor and likely typographical in nature, they are worth noting for those aiming to implement CALQL correctly.
+These corrections align with both the mathematical principles of the algorithm
+and the authors' actual implementation in their source code repository. While
+these inconsistencies are minor and likely typographical in nature, they are
+worth noting for those aiming to implement CALQL correctly.
+
+=== Implementation Notes on IQL
+
+In our review of the Implicit Q-Learning implementation presented in the
+original paper, we identified a minor inconsistency in the provided formula
+that we corrected in our implementation:
+
+The policy loss function in Equation (7) of the paper shows:
+
+$
+L_pi (phi.alt) = EE_((s,a)~D) \
+[ exp(beta (Q_theta (s, a) - V_psi (s))) log pi_phi.alt (a | s) ]
+$
+
+However, since this is a loss function that should be minimized during optimization, the correct formula should include a negative sign:
+
+$
+L_pi (phi.alt) = EE_((s,a)~D) \
+[ exp(beta (Q_theta (s, a) - V_psi (s))) log pi_phi.alt (a | s) ]
+$
+
+This correction aligns with the mathematical principles of advantage-weighted
+regression, where the objective is to maximize the likelihood of actions with
+high advantages. While this inconsistency is minor and likely typographical in
+nature, it's worth noting for those aiming to implement IQL correctly.
 
 == Appendix C
 
@@ -385,6 +414,8 @@ L_V (psi) = EE_((s, a, r, s')~B) \ [ (V_psi (s) -
 (min Q_theta_i (s, a_s) - alpha log(pi_phi (a_s | s))))^2 ]
 $
 
+where $a_s ~ pi_phi (.|s)$ is an action sampled from the policy.
+
 The second is a Q-network, which does a forward pass on a state-action pair and estimates the expected reward that the agent gets after doing a given action in a given state. To update its weights, we compute the following loss:
 
 $
@@ -402,7 +433,91 @@ L_pi (phi.alt) = EE [ alpha log(pi_(phi.alt) (a_s | s)) - Q_(theta_i) (s, a_s) ]
 $
 
 === Implementation detail of AFU
+Actor Free critic Updates implements an actor-critic architecture with a novel advantage decomposition approach. It uses six neural networks: a main critic network with parameters $psi$, twin value networks with parameters $phi_1$ and $phi_2$, their target versions with parameters $phi_1'$ and $phi_2'$, twin advantage networks with parameters $xi_1$ and $xi_2$, and a policy network with parameters $theta$. The temperature parameter $alpha$ controls exploration, with target entropy set to $-|cal(A)|$ where $cal(A)$ is the action space. The gradient reduction parameter $rho in [0, 1]$ controls value function learning dynamics. Experiences $(s, a, r, s')$ are stored in a replay buffer $cal(B)$ of capacity $N$, from which mini-batches of size $B$ are sampled. Networks are updated using learning rates $l_Q$, $l_V$, $l_\pi$, and $l_alpha$ for critic, value/advantage networks, policy, and temperature respectively, with target networks soft-updated at rate $tau$.
+
+The first is a Q-network, which does a forward pass on a state-action pair and estimates the expected reward of an agent taking action $a$ in state $s$. To update its weights, we compute the following loss:
+
+$
+L_Q (psi) = EE_((s, a, r, s') ~ cal(B)) \
+[ (Q_psi (s, a) - r - gamma min_(i in {1,2}) V_(phi_i') (s'))^2 ]
+$
+
+The second is a combined value and advantage loss for each network pair, which updates both value and advantage networks based on the relation $Q(s,a) = V(s) + A(s,a)$. To update their weights, we compute:
+
+$
+L_("VA") (phi_i, xi_i) = EE_((s, a, r, s') ~ cal(B)) \
+[ Z(Upsilon_i^a (s) - r - gamma min_(i in {1,2}) V_(phi_i') (s'), A_(xi_i) (s,a)) ]
+$
+
+where:
+
+$
+Z(x, y) = cases((x + y)^2 quad "if" x <= 0, x^2 + y^2 quad "otherwise") \
+Upsilon_i^a (s) = (1 - rho . I_i (s,a)) V_(phi_i) (s) + rho . I_i (s,a) . V_(phi_i)^("nograd") (s) \
+I_i (s, a) = cases(1 quad "if" V_(phi_i) (s) + A_(xi_i) (s, a) < Q_psi (s, a), 0 quad "otherwise")
+$
+
+The last is a policy network that parameterizes a Gaussian distribution over actions. It outputs mean actions and learns log standard deviations as parameters. Using the reparameterization trick and tanh squashing for bounded actions, the policy is optimized by minimizing:
+
+$
+L_pi (theta) = EE_(s ~ cal(B)) [ alpha log(pi_theta (a_s | s)) - Q_psi (s, a_s) ]
+$
 
 === Implementation detail of IQL
+Implicit Q-Learning is an offline reinforcement learning algorithm that decouples value learning from policy improvement. It uses five neural networks: twin critics with parameters $theta_1$ and $theta_2$, their target versions with parameters $theta_1'$ and $theta_2'$, a value network with parameters $psi$, and a policy network with parameters $phi$. The expectile regression parameter $tau' in [0, 1]$ controls the conservatism in value estimation, while the temperature parameter $beta > 0$ determines how aggressively to exploit advantages. Experience tuples $(s, a, r, s')$ are stored in a replay buffer $cal(B)$ of capacity $N$, from which mini-batches of size $B$ are sampled. Networks are updated using learning rates $l_Q$, $l_V$, $l_pi$, and $l_alpha$ for critics, value network, policy, and temperature respectively, with target networks soft-updated at rate $tau$.
+
+The first is a value network, which estimates the expected return from a state without considering actions. To update its weights, we compute the asymmetric $L_2$ loss:
+
+$
+L_V (psi) = EE_((s,a) ~ cal(B)) [L_2^(tau') (Q_theta (s, a) - V_psi (s))]
+$
+
+where $L_2^(tau') (u) = |tau' - bb(1) (u < 0)| . u^2$ is the asymmetric $L_2$ loss with parameter $tau'$.
+
+The second is a Q-network, which estimates expected returns for state-action pairs. To update its weights, we compute the standard TD loss:
+
+$
+L_Q (theta_i) = EE_((s,a,r,s') ~ cal(B)) [(Q_(theta_i) (s, a) - r - gamma V_(psi) (s'))^2]
+$
+
+The last is a policy network that parameterizes a Gaussian distribution over actions. It outputs mean actions and learns log standard deviations as parameters. Using the reparameterization trick and tanh squashing for bounded actions, the policy is optimized by maximizing likelihood weighted by advantages:
+
+$
+L_(pi) (phi) = EE_((s,a) ~ cal(B)) \
+[exp(beta . min(0, Q_(theta') (s, a) - V_(psi) (s))) . log pi_(phi) (a|s)]
+$
+where $beta$ controls the temperature and we clip advantages to be non-positive to avoid overoptimism.
 
 === Implementation detail of CAL-QL
+Calibrated Q-learning extends offline RL with a conservative regularization approach. It uses three neural networks: a critic (Q-network) with parameters $psi$, its target version with parameters $psi'$, and a policy network with parameters $phi$. The temperature parameter $alpha > 0$ controls the conservative regularization strength, while the sampling parameter $n$ determines how many random and policy-sampled actions are used for regularization. The algorithm incorporates Monte Carlo returns from a dataset as reference values $V_mu (s)$ to mitigate overestimation. Experience tuples $(s, a, r, s')$ are stored in a replay buffer $cal(B)$ of capacity $N$, from which mini-batches of size $B$ are sampled. Networks are updated using learning rates $l_Q$, $l_\pi$, and $l_alpha$ for critic, policy, and temperature respectively, with target networks soft-updated at rate $tau$.
+
+The first is a Q-network loss, which combines a standard TD loss with a conservative regularization term:
+
+$
+L_Q (psi) = L_Q^("TD") (psi) + alpha . L_Q^("CON") (psi)
+$
+
+The TD loss follows the standard form:
+$
+L_Q^("TD") (psi) = EE_((s,a,r,s') ~ cal(B)) \
+[(Q_psi (s, a) - r - gamma Q_(psi') (s', a_(s')))^2]
+$
+
+The conservative regularization term penalizes Q-value overestimation:
+
+$
+L_Q^("CON") (psi)
+= EE_(s ~ cal(B)) \
+[log(
+sum_(i=1)^n exp(Q_psi (s, a_R^i) - log(0.5^(|cal(A)|))) \
+  + sum_(i=1)^n exp(max(V_mu (s), Q_psi (s, a_s^i) - log pi_phi (a_s^i|s)))) \
+- Q_psi (s, a)]
+$
+
+where $a_R^i$ are random actions sampled uniformly and $V_mu (s)$ are reference values from Monte Carlo returns.
+
+The policy network is optimized through the standard SAC policy loss:
+
+$
+L_pi (phi) = EE_(s ~ cal(B)) [alpha log(pi_phi (a_s | s)) - Q_psi (s, a_s)]
+$
