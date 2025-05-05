@@ -384,6 +384,8 @@ L_V (psi) = EE_((s, a, r, s')~B) \ [ (V_psi (s) -
 (min Q_theta_i (s, a_s) - alpha log(pi_phi (a_s | s))))^2 ]
 $
 
+where $a_s ~ pi_phi (.|s)$ is an action sampled from the policy.
+
 The second is a Q-network, which does a forward pass on a state-action pair and estimates the expected reward that the agent gets after doing a given action in a given state. To update its weights, we compute the following loss:
 
 $
@@ -401,7 +403,59 @@ L_pi (phi.alt) = EE [ alpha log(pi_(phi.alt) (a_s | s)) - Q_(theta_i) (s, a_s) ]
 $
 
 === Implementation detail of AFU
+Actor Free critic Updates implements an actor-critic architecture with a novel advantage decomposition approach. It uses six neural networks: a main critic network with parameters $psi$, twin value networks with parameters $phi_1$ and $phi_2$, their target versions with parameters $phi_1'$ and $phi_2'$, twin advantage networks with parameters $xi_1$ and $xi_2$, and a policy network with parameters $theta$. The temperature parameter $alpha$ controls exploration, with target entropy set to $-|cal(A)|$ where $cal(A)$ is the action space. The gradient reduction parameter $rho in [0, 1]$ controls value function learning dynamics. Experiences $(s, a, r, s')$ are stored in a replay buffer $cal(B)$ of capacity $N$, from which mini-batches of size $B$ are sampled. Networks are updated using learning rates $l_Q$, $l_V$, $l_\pi$, and $l_alpha$ for critic, value/advantage networks, policy, and temperature respectively, with target networks soft-updated at rate $tau$.
+
+The first is a Q-network, which does a forward pass on a state-action pair and estimates the expected reward of an agent taking action $a$ in state $s$. To update its weights, we compute the following loss:
+
+$
+L_Q (psi) = EE_((s, a, r, s') ~ cal(B)) \
+[ (Q_psi (s, a) - r - gamma min_{i in {1,2}} V_(phi_i') (s'))^2 ]
+$
+
+The second is a combined value and advantage loss for each network pair, which updates both value and advantage networks based on the relation $Q(s,a) = V(s) + A(s,a)$. To update their weights, we compute:
+
+$
+L_("VA") (phi_i, xi_i) = EE_((s, a, r, s') ~ cal(B)) \
+[ Z(Upsilon_i^a (s) - r - gamma min_{i in {1,2}} V_(phi_i') (s'), A_(xi_i) (s,a)) ]
+$
+
+where:
+
+$
+Z(x, y) = cases((x + y)^2 quad "if" x <= 0, x^2 + y^2 quad "otherwise") \
+Upsilon_i^a (s) = (1 - rho . I_i (s,a)) V_(phi_i) (s) + rho . I_i (s,a) . V_(phi_i)^("nograd") (s) \
+I_i (s, a) = cases(1 quad "if" V_(phi_i) (s) + A_(xi_i) (s, a) < Q_psi (s, a), 0 quad "otherwise")
+$
+
+The last is a policy network that parameterizes a Gaussian distribution over actions. It outputs mean actions and learns log standard deviations as parameters. Using the reparameterization trick and tanh squashing for bounded actions, the policy is optimized by minimizing:
+
+$
+L_pi (theta) = EE_(s ~ cal(B)) [ alpha log(pi_theta (a_s | s)) - Q_psi (s, a_s) ]
+$
 
 === Implementation detail of IQL
+Implicit Q-Learning is an offline reinforcement learning algorithm that decouples value learning from policy improvement. It uses five neural networks: twin critics with parameters $theta_1$ and $theta_2$, their target versions with parameters $theta_1'$ and $theta_2'$, a value network with parameters $psi$, and a policy network with parameters $phi$. The expectile regression parameter $tau' in [0, 1]$ controls the conservatism in value estimation, while the temperature parameter $beta > 0$ determines how aggressively to exploit advantages. Experience tuples $(s, a, r, s')$ are stored in a replay buffer $cal(B)$ of capacity $N$, from which mini-batches of size $B$ are sampled. Networks are updated using learning rates $l_Q$, $l_V$, $l_pi$, and $l_alpha$ for critics, value network, policy, and temperature respectively, with target networks soft-updated at rate $tau$.
+
+The first is a value network, which estimates the expected return from a state without considering actions. To update its weights, we compute the asymmetric $L_2$ loss:
+
+$
+L_V (psi) = EE_((s,a) ~ cal(B)) [L_2^(tau') (Q_theta (s, a) - V_psi (s))]
+$
+
+where $L_2^(tau') (u) = |tau' - bb(1) (u < 0)| . u^2$ is the asymmetric $L_2$ loss with parameter $tau'$.
+
+The second is a Q-network, which estimates expected returns for state-action pairs. To update its weights, we compute the standard TD loss:
+
+$
+L_Q (theta_i) = EE_((s,a,r,s') ~ cal(B)) [(Q_(theta_i) (s, a) - r - gamma V_(psi) (s'))^2]
+$
+
+The last is a policy network that parameterizes a Gaussian distribution over actions. It outputs mean actions and learns log standard deviations as parameters. Using the reparameterization trick and tanh squashing for bounded actions, the policy is optimized by maximizing likelihood weighted by advantages:
+
+$
+L_(pi) (phi) = EE_((s,a) ~ cal(B)) \
+[exp(beta . min(0, Q_(theta') (s, a) - V_(psi) (s))) . log pi_(phi) (a|s)]
+$
+where $beta$ controls the temperature and we clip advantages to be non-positive to avoid overoptimism.
 
 === Implementation detail of CAL-QL

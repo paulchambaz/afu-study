@@ -468,7 +468,7 @@ class IQL:
                 "alpha_lr": 0.005,
                 "replay_size": 200_000,
                 "batch_size": 256,
-                "tau": 0.9,
+                "tau": 0.01,
                 "tau_regression": 0.9,
                 "beta": 3.0,
                 "gamma": 0.99,
