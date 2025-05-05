@@ -8,7 +8,8 @@ class Offline(Experiment):
         training_step = 0
 
         dataset_files = [
-            "dataset/OnPolicy-SAC-PendulumStudy-v0-data.pk",
+            "dataset/OffPolicyDataset-AFU-PendulumStudy-v0-dataset.pk",
+            "dataset/OnPolicyDataset-SAC-PendulumStudy-v0-dataset.pk",
         ]
 
         self.hyperparameters["dataset_files"] = dataset_files
