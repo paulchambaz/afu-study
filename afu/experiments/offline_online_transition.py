@@ -24,9 +24,10 @@ class OfflineOnlineTransition(Experiment):
 
         progress = tqdm(dataset, desc=f"Offline Training {i}/{self.params.n}")
 
-        for state, action, reward, next_state, done in progress:
-            agent.replay_buffer.push(state, action, reward, next_state, done)
+        for state, action, reward, next_state, done in dataset:
+            agent.replay_buffer.push(state, action * 0.5, reward, next_state, done)
 
+        for _ in progress:
             agent.update()
             agent.total_steps += 1
             training_step += 1

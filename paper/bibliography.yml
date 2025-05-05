@@ -1,0 +1,70 @@
+perringilbert2024:
+  type: Article
+  title: "AFU: Actor-Free critic Updates in off-policy RL for continuous control"
+  author: ["Nicolas Perrin-Gilbert"]
+  date: 2024
+  url: https://arxiv.org/abs/2404.16159
+
+haarnoja2018:
+  type: Article
+  title: "Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor"
+  author: ["Tuomas Haarnoja", "Aurick Zhou", "Pieter Abbeel", "Sergey Levine"]
+  date: 2018
+  url: https://arxiv.org/abs/1801.01290
+
+lillicrap2019:
+  type: Article
+  title: "Continuous control with deep reinforcement learning"
+  author:
+    [
+      "Timothy P. Lillicrap",
+      "Jonathan J. Hunt",
+      "Alexander Pritzel",
+      "Nicolas Heess",
+      "Tom Erez",
+      "Yuval Tassa",
+      "David Silver",
+      "Daan Wierstra",
+    ]
+  date: 2019
+  url: https://arxiv.org/abs/1509.02971
+
+mnih2013:
+  type: Article
+  title: "Playing Atari with Deep Reinforcement Learning"
+  author:
+    [
+      "Volodymyr Mnih",
+      "Koray Kavukcuoglu",
+      "David Silver",
+      "Alex Graves",
+      "Ioannis Antonoglou",
+      "Daan Wierstra",
+      "Martin Riedmiller",
+    ]
+  date: 2013
+  url: https://arxiv.org/abs/1312.5602
+
+kostrikov2021:
+  type: Article
+  title: "Offline Reinforcement Learning with Implicit Q-Learning"
+  author: ["Ilya Kostrikov", "Ashvin Nair", "Sergey Levine"]
+  date: 2021
+  url: https://arxiv.org/abs/2110.06169
+
+nakamoto2024:
+  type: Article
+  title: "Cal-QL: Calibrated Offline RL Pre-Training for Efficient Online Fine-Tuning"
+  author:
+    [
+      "Mitsuhiko Nakamoto",
+      "Yuexiang Zhai",
+      "Anikait Singh",
+      "Max Sobol Mark",
+      "Yi Ma",
+      "Chelsea Finn",
+      "Aviral Kumar",
+      "Sergey Levine",
+    ]
+  date: 2024
+  url: https://arxiv.org/abs/2303.05479
