@@ -89,7 +89,7 @@ class Experiment(ABC):
         env = gym.make(self.params.env_name)
 
         results = []
-        transitions = []
+        # transitions = []
 
         for _ in range(n):
             state, _ = env.reset()
@@ -102,7 +102,7 @@ class Experiment(ABC):
                 next_state, reward, terminated, truncated, _ = env.step(scaled_action)
                 done = terminated or truncated
 
-                transitions.append((state, action, reward, next_state, done))
+                # transitions.append((state, action, reward, next_state, done))
 
                 total_reward += reward
                 state = next_state
@@ -110,7 +110,7 @@ class Experiment(ABC):
             results.append(total_reward)
 
         env.close()
-        return results, transitions
+        return results
 
     def log_metrics(self, step, metrics) -> None:
         for key, value in metrics.items():

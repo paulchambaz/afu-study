@@ -1,4 +1,6 @@
 run *ARGS:
+  python -m scripts.evaluate --algo calql --env pendulum --experiment offlineonline --run 1 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo iql --env pendulum --experiment offlineonline --run 5 --steps 200000 --trials 0
   python -m scripts.evaluate --algo sac --env pendulum --experiment offlineonline --run 5 --steps 200000 --trials 0
   python -m scripts.evaluate --algo afu --env pendulum --experiment offlineonline --run 5 --steps 200000 --trials 0
 

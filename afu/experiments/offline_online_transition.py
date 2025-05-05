@@ -18,7 +18,7 @@ class OfflineOnlineTransition(Experiment):
         for file in dataset_files:
             with open(file, "rb") as f:
                 results = pickle.load(f)
-                dataset.extend(results["transitions"])
+                dataset.extend(results)
 
         agent = self.algo(self.hyperparameters)
 
