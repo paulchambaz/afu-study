@@ -58,7 +58,7 @@
   ]
 
   if abstract != none {
-    align(center, text(13pt, weight: 500, smallcaps[Abstrait]))
+    align(center, text(13pt, weight: 500, smallcaps[Abstract]))
     pad(x: 1cm, bottom: 0.5cm, abstract)
   }
 

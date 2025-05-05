@@ -140,13 +140,12 @@ class Experiment(ABC):
         torch.save(self.agent, weights_filename)
         print(f"Agent weights saved to {weights_filename}")
 
-        dataset_filename = (
-            f"dataset/{policy_type}-{algo_name}-{self.params.env_name}-dataset.pk"
-        )
-
-        with open(dataset_filename, "wb") as f:
-            pickle.dump(self.transitions, f)
-        print(f"Results saved to {dataset_filename}")
+        # dataset_filename = (
+        #     f"dataset/{policy_type}-{algo_name}-{self.params.env_name}-dataset.pk"
+        # )
+        # with open(dataset_filename, "wb") as f:
+        #     pickle.dump(self.transitions, f)
+        # print(f"Results saved to {dataset_filename}")
 
     def send_to_influxdb(self, metrics) -> None:
         """
@@ -184,7 +183,7 @@ class Experiment(ABC):
 
         self.results = {"rewards": dict(shared_results["rewards"])}
         self.agent = dict(shared_results["agent"])
-        self.transitions = shared_results["transitions"]
+        # self.transitions = shared_results["transitions"]
 
     def tuned_run(self, n_trials=50, n_parallel_trials=5, n_runs=3):
         if n_trials > 0:
