@@ -45,8 +45,6 @@ class OfflineOnlineTransition(Experiment):
 
                     progress.set_postfix({"eval": self._get_stats(eval_results)})
 
-                break
-
         progress = tqdm(
             range(self.params.total_steps),
             desc=f"Online Training {i}/{self.params.n}",
