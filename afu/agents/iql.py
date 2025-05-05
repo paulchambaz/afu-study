@@ -281,13 +281,13 @@ class IQL:
         q1_workspace.set("env/env_obs", 0, states)
         q1_workspace.set("action", 0, actions)
         self.q_target_network1(q1_workspace, t=0)
-        q1_values = q1_workspace.get("q1/q_value", 0)
+        q1_values = q1_workspace.get("q1_target/q_value", 0)
 
         q2_workspace = Workspace()
         q2_workspace.set("env/env_obs", 0, states)
         q2_workspace.set("action", 0, actions)
         self.q_target_network2(q2_workspace, t=0)
-        q2_values = q2_workspace.get("q2/q_value", 0)
+        q2_values = q2_workspace.get("q2_target/q_value", 0)
 
         q_values = torch.min(q1_values, q2_values)
 
