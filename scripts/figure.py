@@ -124,7 +124,7 @@ def main():
 
             state = torch.tensor([[x, y, velocity]])
 
-            v_value = get_v_value(agent, state)
+            v_value = get_v_q_value(agent, state)
             v_values[j, i] = v_value
 
             policy_workspace = Workspace()
@@ -132,28 +132,27 @@ def main():
             agent.policy_network(policy_workspace, t=0)
             # agent.policy_network.sample_action(policy_workspace, t=0)
             action = policy_workspace.get("mean", 0)
-            actions[j, i] = action
+            actions[j, i] = torch.tanh(action)
 
-    # Create figure 1: V-values
-    plt.figure(figsize=(6, 6))
-    plt.title("V-Values as a function of angle and velocity")
-    plt.xlabel("Angle (radians)")
-    plt.ylabel("Velocity")
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    fig.suptitle("CALQL", fontsize=16)
 
-    # Plot V-values as a color map
-    im1 = plt.pcolormesh(angles, velocities, v_values, shading="auto", cmap="viridis")
-    plt.colorbar(im1, label="V Value")
+    # First subplot: V-values
+    im1 = ax1.pcolormesh(angles, velocities, v_values, shading="auto", cmap="viridis")
+    ax1.set_title("V-Values as a function of angle and velocity")
+    ax1.set_xlabel("Angle (radians)")
+    ax1.set_ylabel("Velocity")
+    fig.colorbar(im1, ax=ax1, label="V Value")
 
-    # Create figure 2: Actions
-    plt.figure(figsize=(6, 6))
-    plt.title("Actions as a function of angle and velocity")
-    plt.xlabel("Angle (radians)")
-    plt.ylabel("Velocity")
+    # Second subplot: Actions
+    im2 = ax2.pcolormesh(angles, velocities, actions, shading="auto", cmap="coolwarm")
+    ax2.set_title("Actions as a function of angle and velocity")
+    ax2.set_xlabel("Angle (radians)")
+    ax2.set_ylabel("Velocity")
+    fig.colorbar(im2, ax=ax2, label="Action")
 
-    # Plot actions as a color map
-    im2 = plt.pcolormesh(angles, velocities, actions, shading="auto", cmap="coolwarm")
-    plt.colorbar(im2, label="Action")
-
+    # Adjust layout to prevent overlap
+    plt.tight_layout(rect=[0, 0, 1, 0.95])  # Leave space for the main title
     plt.show()
 
 
