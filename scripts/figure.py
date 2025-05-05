@@ -1,0 +1,167 @@
+import argparse
+import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
+import torch
+import math
+import gymnasium as gym
+import pickle
+import numpy as np
+from pathlib import Path
+from tqdm import tqdm
+from bbrl.workspace import Workspace  # type: ignore
+
+from afu.agents.ddpg import DDPG
+from afu.agents.sac import SAC
+from afu.agents.afu import AFU
+
+ALGORITHMS = {
+    "ddpg": DDPG,
+    "sac": SAC,
+    "afu": AFU,
+}
+
+ENVS = {
+    "cartpole": "CartPoleContinuousStudy-v0",
+    "pendulum": "PendulumStudy-v0",
+    "lunarlander": "LunarLanderContinuousStudy-v0",
+    "swimmer": "SwimmerStudy-v0",
+    "ant": "AntStudy-v0",
+    "bipedalwalker": "BipedalWalkerStudy-v0",
+}
+
+
+def load_agent_from_weights(env_name, algo_class, weights_path, hyperparameters=None):
+    if hyperparameters is None:
+        # Use default hyperparameters if none provided
+        hyperparameters = algo_class._get_params_defaults()
+        hyperparameters["env_name"] = env_name
+
+    agent = algo_class(hyperparameters)
+    agent.load(weights_path)
+    print(f"Loaded weights from {weights_path}")
+    return agent
+
+
+def load_results_file(results_path):
+    with open(results_path, "rb") as f:
+        results = pickle.load(f)
+    return results
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Collect expert experience data from trained agent"
+    )
+
+    # Basic arguments
+    parser.add_argument(
+        "--algo",
+        type=str,
+        choices=ALGORITHMS.keys(),
+        required=True,
+        help="Algorithm to use",
+    )
+    parser.add_argument(
+        "--env",
+        type=str,
+        choices=ENVS.keys(),
+        required=True,
+        help="Environment to run",
+    )
+
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--weights", type=str, help="Path to weights file to load")
+    group.add_argument(
+        "--results",
+        type=str,
+        help="Path to results file (will also load associated weights)",
+    )
+
+    args = parser.parse_args()
+
+    algo_class = ALGORITHMS[args.algo]
+    env_name = ENVS[args.env]
+
+    if args.results:
+        results = load_results_file(args.results)
+        hyperparameters = results["hyperparameter"]
+
+        results_path = Path(args.results)
+        weights_path = results_path.parent / f"{results_path.stem}-weights.pt"
+
+        if not weights_path.exists():
+            print(f"Warning: Could not find weights file at {weights_path}")
+            print("Attempting to use algorithm defaults instead.")
+            agent = algo_class(hyperparameters)
+        else:
+            agent = load_agent_from_weights(
+                env_name, algo_class, weights_path, hyperparameters
+            )
+    else:
+        agent = load_agent_from_weights(env_name, algo_class, args.weights)
+
+    width = 100
+    height = 100
+
+    angles = np.zeros((width))
+    velocities = np.zeros((height))
+    v_values = np.zeros((height, width))
+    actions = np.zeros((height, width))
+
+    for i in range(width):
+        for j in range(height):
+            theta = 2 * math.pi * i / float(width)
+            angles[i] = theta
+            velocity = ((j / float(height)) * 2 - 1) * 8
+            velocities[j] = velocity
+
+            x = math.cos(theta)
+            y = math.sin(theta)
+
+            state = torch.tensor([[x, y, velocity]])
+
+            v1_workspace = Workspace()
+            v1_workspace.set("env/env_obs", 0, state)
+            agent.v_network1(v1_workspace, t=0)
+            v1_values = v1_workspace.get("v1/v_value", 0)
+
+            v2_workspace = Workspace()
+            v2_workspace.set("env/env_obs", 0, state)
+            agent.v_network2(v2_workspace, t=0)
+            v2_values = v2_workspace.get("v2/v_value", 0)
+
+            v_value = min(v1_values, v2_values)
+            v_values[j, i] = v_value
+
+            policy_workspace = Workspace()
+            policy_workspace.set("env/env_obs", 0, state)
+            agent.policy_network(policy_workspace, t=0)
+            # agent.policy_network.sample_action(policy_workspace, t=0)
+            action = policy_workspace.get("mean", 0)
+            actions[j, i] = action
+
+    # Create figure 1: V-values
+    plt.figure(figsize=(6, 6))
+    plt.title("V-Values as a function of angle and velocity")
+    plt.xlabel("Angle (radians)")
+    plt.ylabel("Velocity")
+
+    # Plot V-values as a color map
+    im1 = plt.pcolormesh(angles, velocities, v_values, shading="auto", cmap="viridis")
+    plt.colorbar(im1, label="V Value")
+
+    # Create figure 2: Actions
+    plt.figure(figsize=(6, 6))
+    plt.title("Actions as a function of angle and velocity")
+    plt.xlabel("Angle (radians)")
+    plt.ylabel("Velocity")
+
+    # Plot actions as a color map
+    im2 = plt.pcolormesh(angles, velocities, actions, shading="auto", cmap="coolwarm")
+    plt.colorbar(im2, label="Action")
+
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()
