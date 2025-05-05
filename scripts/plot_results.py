@@ -51,7 +51,8 @@ def display_results(results_dict, colors_dict, title, N=4):
     plt.title(title)
     plt.legend()
     plt.grid(True, alpha=0.3)
-    plt.show()
+    # plt.show()
+    plt.savefig(f"{title}.svg", format="svg")
 
 
 def plot_histograms(experiment_results, colors_dict, experiment, env):
@@ -76,7 +77,11 @@ def plot_histograms(experiment_results, colors_dict, experiment, env):
         plt.xlabel("Return")
         plt.ylabel("Frequency")
         plt.grid(True, alpha=0.3)
-        plt.show()
+        # plt.show()
+
+        # svg_filename = f"histogram_{env}_{algo}_{experiment}.svg"
+        # plt.savefig(svg_filename, format="svg")
+        # print(f"Saved histogram to {svg_filename}")
 
 
 def main():
