@@ -467,7 +467,7 @@ class IQL:
                 "policy_lr": 3e-4,
                 "alpha_lr": 0.005,
                 "replay_size": 200_000,
-                "batch_size": 16,
+                "batch_size": 256,
                 "tau": 0.9,
                 "tau_regression": 0.9,
                 "beta": 3.0,

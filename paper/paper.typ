@@ -252,118 +252,6 @@ recovers during the online phase.
 
 
 
-// === Overview
-//
-// AFU (Actor-Free Updates) is an off-policy reinforcement learning
-// algorithm that decouples the critic update from the actor. The core
-// innovation lies in how AFU solves the #emph[max-Q problem];: instead of
-// relying on an actor network to approximate $arg max_a Q (s \, a)$, it
-// trains a value network $V_phi.alt (s)$ via regression to estimate
-// $max_a Q (s \, a)$ directly.
-//
-// AFU employs three types of networks:
-//
-// - A Q-function $Q_psi (s \, a)$, trained using temporal-difference
-//   learning;
-//
-// - A value network $V_(phi.alt_i) (s)$, trained to approximate
-//   $max_a Q (s \, a)$;
-//
-// - An advantage network $A_(xi_i) (s \, a)$, enforcing
-//   $Q (s \, a) approx V (s) + A (s \, a)$, with $A (s \, a) lt.eq 0$.
-//
-// === Solving the Max-Q Problem
-//
-// The value and advantage networks are trained using the following
-// soft-constrained loss:
-// $ Lambda'_(V \, A) (phi.alt \, xi) = bb(E)_((s \, a) tilde.op cal(D)) [Z (Upsilon^a (s) - Q_psi (s \, a) \, A_xi (s \, a))] \, $
-// where $ Z (x \, y) = cases(delim: "{", (x + y)^2 \, & upright("if ") x gt.eq 0, x^2 + y^2 \, & upright("otherwise")) $, and
-// $Upsilon^a (s)$ modulates the gradient update to down-weight increases
-// in $V_phi.alt$ when they would otherwise overestimate $Q$. This
-// conditional gradient rescaling avoids the instability issues observed in
-// regularized approaches like IQL or SQL.
-//
-// === Actor Training in AFU-alpha
-//
-// In AFU-alpha, a stochastic actor $pi_theta$ is used for data collection
-// and trained using a SAC-style loss:
-// $ L_pi (theta) = bb(E)_(s \, a tilde.op pi_theta) [alpha log pi_theta (a divides s) - Q_psi (s \, a)] \, $
-// $ L_(upright("temp")) (alpha) = bb(E)_(s \, a tilde.op pi_theta) [- alpha log pi_theta (a divides s) - alpha H^(‾)] \, $
-// where $H^(‾)$ is a target entropy and $alpha$ is a temperature parameter
-// optimized during training.
-//
-// === AFU-beta: Actor Guidance via Gradient Projection
-//
-// To improve upon AFU-alpha and address SAC-like failure modes, AFU-beta
-// introduces a regressed guidance network $mu_zeta (s)$, trained to match
-// actions with high Q-values. Actor gradients are then projected to avoid
-// directions that deviate from $mu_zeta (s)$ in low-value regions:
-// $ upright(bold(G))_(s \, a) (nabla_a Q_psi (s \, a)) = cases(delim: "{", upright("proj")_(tack.t (mu_zeta (s) - a)) (nabla_a Q_psi (s \, a)) \, & upright("if misaligned and ") Q (s \, a) < V (s) \,, nabla_a Q_psi (s \, a) \, & upright("otherwise") .) $
-//
-// This results in a modified policy gradient
-// $nabla_theta^(upright("MODIF")) L_pi (theta)$, which helps prevent the
-// actor from becoming trapped in local optima.
-//
-// === Connection to Research Objectives
-//
-// AFU's design directly addresses our two research hypotheses:
-//
-// + #strong[Learning from Random Data:] Since AFU's critic is
-//   actor-independent, it can learn effectively from random or off-policy
-//   transitions, unlike SAC or DDPG.
-//
-// + #strong[Offline-to-Online Stability:] AFU's critic does not suffer
-//   from over- or underestimation when exposed to unseen actions during
-//   the transition from offline to online learning, offering more stable
-//   performance.
-//
-// In this study we will try to validate these hypotheses by creating various experimental settings. We will also compare AFU with other algorithms such as SAC, IQL and Cal-QL.
-//
-// == Experimental study
-//
-// === Off and On-Policy Training
-//
-// ==== First Results
-//
-// We evaluated AFU on the CartPoleContinuous environment and obtained results that closely match those observed using Mr. Perrin's original implementation. [These results are included in the figures attached to this report] -- Mettre les figures. AFU significantly outperforms SAC on this task. Notably, AFU achieves these results in only 50k iterations, compared to the 200k required by SAC. As shown in the histograms, AFU also demonstrates greater consistency, suggesting improved stability and reliability during training.
-//
-// However in the Pendulum environment, despite multiple runs, AFU performs poorly, failing to converge even after 1 million steps. In contrast, SAC reliably converges in under 50k steps. Given these results, we did not proceed with Off-Policy training for AFU on this environment.
-//
-// Finally, we conducted experiments on LunarLander. This time, AFU performed well and successfully converged. We runned 1 million steps, but analysis of the learning curve indicates that convergence was already achieved by around 200k steps. We provide histograms showing performance distributions, which (albeit potentially exaggerated) suggest that AFU substantially outperforms SAC on this task.
-//
-// Encouraged by these results, we tested AFU in an Off-Policy setting on LunarLander, using 200k training steps. Unfortunately, the results were similar to those of SAC: neither algorithm achieved meaningful convergence. To verify whether this was due to insufficient data, we extended the training to 1 million steps, but AFU still failed to converge under Off-Policy training.
-//
-// These results suggest that while AFU performs competitively--and at times better than SAC--in On-Policy settings, its Off-Policy capabilities remain limited, particularly in more complex environments like LunarLander.
-//
-// ==== Make AFU more intersting than SAC in an Off-Policy setting
-//
-// Our preliminary results suggest that the initial hypothesis -- that AFU can effectively learn from uniformly generated state-action data -- is likely incorrect. This observation has led us to explore potential reasons behind this behavior and to design alternative experimental settings that could both validate AFU's utility and demonstrate its Off-Policy potential compared to algorithms such as SAC. We outline two such experiments below.
-//
-// 1. Varying the Degree of Policy-Driven Behavior via an Epsilon Parameter
-//
-// A straightforward experimental modification involves introducing a tunable parameter $epsilon$ $in$ [0, 1]. At each step of data generation, a uniform random variable is sampled. If the sample is less than $epsilon$, a state-action pair is drawn uniformly at random, mimicking our prior Off-Policy setting. Otherwise, the action taken is the one prescribed by the current policy, corresponding to the On-Policy setting.
-//
-// This setup allows us to generate a range of datasets interpolating between the On-Policy regime ($epsilon$ = 0) and fully random Off-Policy regime ($epsilon$ = 1). We propose to plot the performance across varying $epsilon$ values, using statistical summaries such as whisker plots (e.g., Q1, IQM, Q3) to visualize trends. If AFU is truly more Off-Policy capable than SAC, its performance degradation should be less pronounced as $epsilon$ increases. This experiment offers a simple yet effective framework for assessing the Off-Policy robustness of learning algorithms. [Résultats à inclure dans le rapport]
-//
-// 2. State-Space Constraints and the Role of Accessible States
-//
-// To better understand the mechanisms behind AFU's behavior, we return to the tabular case. In this setting, it is possible to explicitly construct a lookup table that maps each state to the optimal action over an infinite horizon. When the state space is sufficiently small, exhaustive exploration via random state-action pairs can, in principle, lead to convergence—even for algorithms that are not inherently Off-Policy.
-//
-// For example, in a simple 4x5 maze with 4 actions per state, the total number of state-action pairs is only 80. After sufficient repetitions (e.g., 80k samples), learning the optimal action mapping becomes feasible via brute force. In deep reinforcement learning, such a lookup table is no longer feasible due to the continuous and high-dimensional nature of the state and action spaces. However, the underlying goal — learning a function that approximates such a mapping — remains intact.
-//
-// This perspective sheds light on our results in CartPoleContinuous. Despite the continuous nature of the problem, its effective state-space dimensionality is low. The first state variable (cart position) exhibits a high degree of symmetry and repetition, and we further constrained velocities to lie between -8 and +8. These simplifications reduce the practical complexity of the environment. Thus, brute-force learning may still succeed, even when relying on random data.
-//
-// Importantly, much of the theoretical state-space is not reachable during normal episodes. For example, while velocity can range from -∞ to +∞, in practice, only a narrow subspace of values is observed. We refer to this subspace as the accessible state space. Uniformly sampling across the full space may therefore introduce states that are highly unrealistic and ultimately irrelevant to learning a useful policy.
-//
-// This observation generalizes. Consider a tabular environment with 100B states, where the optimal trajectory only spans 10 states. Random sampling would rarely encounter meaningful states, and learning would stagnate. In LunarLander, we observed behaviors in which the agent exits the visible screen or exhibits unusual dynamics such as rotating mid-air — scenarios that are rarely encountered under a standard policy. Learning accurate Q-values for such states may come at the expense of learning for states within the accessible region.
-//
-// Based on this, we propose a second experiment. First, define bounds on each dimension of the state space to better approximate the accessible subspace. Training the algorithm solely within these constraints may yield better convergence. We can then extend this by performing random walks through the environment: sample an initial state within the constrained bounds, and then take random actions for each step. This would naturally constrain the set of states encountered during training.
-//
-// Such an experimental setup simulates learning from behavior that is entirely unrelated to the agent's own policy. A critic capable of learning accurate Q-values in this setting -- as AFU purports to do -- should outperform critics like SAC, which rely on the actor for accurate Q-value estimation. This setup thus offers a clearer test of the Off-Policy learning capacity of AFU.
-//
-// The same $epsilon$-based framework from the first experiment could be employed here, offering another way to measure degradation in performance as the data distribution diverges from the policy. [Résultats à inclure dans le rapport]
-
-=== Offline to Online Training
 
 ==== First Results
 
@@ -383,25 +271,28 @@ The custom environment wrappers used in this study include the following methods
 - `get_observation_space`: Returns the observation space of the environment.
 - `get_action_space`: Returns the action space of the environment.
 
-These wrappers were implemented to ensure compatibility with the algorithms and to facilitate reproducibility of the experiments.
+These wrappers were implemented to ensure compatibility with the experiments.
 
 ==== Hyperparameters
 
 The following hyperparameters were used for the experiments:
-- Learning rate: 
-- Discount factor ($gamma$): 
-- Batch size: 
-- Replay buffer size: 
-- Target network update rate ($tau$): 
-- Temperature parameter ($alpha$): 
+
+- Hidden size : $256$
+- Learning rate: $3 times 10^(-4)$
+- Discount factor ($gamma$): $0.99$
+- Batch size: $256$
+- Replay buffer size: $200000$
+- Target network update rate ($tau$): $0.01$
+- Gradient reduction (for AFU only) : $0.5$
+- Noise standard deviation (for DDPG only) : $0.1$
+- Expectile regression ($tau'$) (for IQL only): $0.9$
+- Inverse temperature ($beta$) (for IQL only): $3.0$
+- Conservative factor ($alpha$) (for Cal-QL only): $5$
+- Random repetitions ($n$) (for Cal-QL only): $4$
 
 === Reproducibility
 
-The code for all algorithms and experiments is available at [GitHub Repository]. The repository includes detailed instructions for setting up the environment and running the experiments.
-
-=== Additional Figures
-
-Figures referenced in the report, including learning curves and performance histograms, are provided in the supplementary materials. These figures illustrate the comparative performance of the algorithms across different environments and settings.
+The code for all algorithms and experiments is available at #link("https://github.com/paulchambaz/afu-study"). The repository includes detailed instructions for setting up the environment and running the experiments.
 
 == Appendix B
 
