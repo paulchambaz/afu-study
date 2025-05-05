@@ -1,8 +1,16 @@
 run *ARGS:
-  python -m scripts.evaluate --algo calql --env pendulum --experiment offlineonline --run 5 --steps 200000 --trials 0
-  python -m scripts.evaluate --algo iql --env pendulum --experiment offlineonline --run 5 --steps 200000 --trials 0
-  python -m scripts.evaluate --algo sac --env pendulum --experiment offlineonline --run 5 --steps 200000 --trials 0
-  python -m scripts.evaluate --algo afu --env pendulum --experiment offlineonline --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo afu --env pendulum --experiment offpolicy --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo sac --env pendulum --experiment offpolicy --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo ddpg --env pendulum --experiment offpolicy --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo afu --env mountaincar --experiment offpolicy --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo sac --env mountaincar --experiment offpolicy --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo ddpg --env mountaincar --experiment offpolicy --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo afu --env cartpole --experiment offpolicy --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo sac --env cartpole --experiment offpolicy --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo ddpg --env cartpole --experiment offpolicy --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo afu --env lunarlander --experiment offpolicy --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo sac --env lunarlander --experiment offpolicy --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo ddpg --env lunarlander --experiment offpolicy --run 5 --steps 200000 --trials 0
 
 run-tiny:
   python -m scripts.evaluate --algo afu --env pendulum --experiment offpolicydataset --run 1 --steps 500 --trials 0
