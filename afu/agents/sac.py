@@ -169,9 +169,6 @@ class SAC:
             hidden_dims=hidden_dims,
             action_dim=self.action_dim,
         )
-        print("IQL policy model weights:")
-        for name, param in self.policy_network.model.named_parameters():
-            print(f"{name}: {param.data.abs().mean()}, {torch.isnan(param.data).any()}")
 
         # Temperature
         self.log_alpha = nn.Parameter(torch.zeros(1, requires_grad=True))

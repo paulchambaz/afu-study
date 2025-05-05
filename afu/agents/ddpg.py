@@ -342,6 +342,22 @@ class DDPG:
                 progress.set_postfix({"avg_reward": f"{avg_reward:.2f}"}, refresh=True)
 
         return {"episode_rewards": episode_rewards}
+    
+    def get_weights(self) -> dict:
+        """Get the weights of the actor and critic networks, along with optimizer states and parameters."""
+        return {
+            # Network states
+            "actor_state": self.actor.state_dict(),
+            "critic_state": self.critic.state_dict(),
+            "target_actor_state": self.target_actor.state_dict(),
+            "target_critic_state": self.target_critic.state_dict(),
+            # Optimizer states
+            "actor_optimizer_state": self.actor_optimizer.state_dict(),
+            "critic_optimizer_state": self.critic_optimizer.state_dict(),
+            # Other parameters
+            "params": self.params,
+            "total_steps": self.total_steps,
+        }
 
     def save(self, path: str) -> None:
         # Save everything needed to restore the agent: network weights,
