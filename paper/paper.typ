@@ -128,12 +128,11 @@ We primarily focused on continuous control tasks including Pendulum, CartPole
 To facilitate our research on off-policy learning properties, we extended these
 environments with additional functionality. Each environment was modified to
 support direct state manipulation through the implementation of a
-`_set_state()` method. This modification enables precise control over the
-system state, allowing us to sample uniformly from the state-action space
-during our off-policy learning experiments. It should be noted that such direct
-state manipulation represents a research tool rather than a practical
-capability in real-world scenarios, where complete state control is rarely
-possible.
+`_set_state()` method. This modification enables control over the system state,
+allowing us to sample uniformly from the state-action space during our
+off-policy learning experiments. It should be noted that such direct state
+manipulation represents a research tool rather than a practical capability in
+real-world scenarios, where complete state control is rarely possible.
 
 === Algorithms
 We implemented several state-of-the-art deep reinforcement learning algorithms
