@@ -223,20 +223,31 @@ approaches tend to be overly pessimistic. CALQL's balanced approach allows it
 to maintain sufficient conservatism during offline learning while facilitating
 effective exploration when transitioning to online learning.
 
-==== Off-policy learning experimental setup
-Our first experiment aims to evaluate whether AFU can truly learn from randomly
-generated data, a capability that would distinguish it from traditional
-off-policy algorithms like DDPG and SAC. The hypothesis stems from the
-theoretical properties of AFU's critic update mechanism, which, unlike
-SARSA-based algorithms, does not rely on the actor's improvement to approximate
-the max-Q operation.
+==== Off-Policy Learning and the Role of the Critic
 
-Traditional actor-critic algorithms like SAC and DDPG are structurally closer
-to SARSA than to Q-learning. Despite being categorized as off-policy, they
-depend on the actor to generate actions for the critic's updates, creating an
-implicit coupling. In contrast, AFU's value and advantage decomposition,
-combined with conditional gradient scaling, allows it to compute critic updates
-independently of the actor, potentially enabling true off-policy learning.
+In reinforcement learning (RL), the term *off-policy* refers to the capacity of an algorithm to learn an optimal policy independently of the data-generating policy (i.e., the *behavior policy*). This property is crucial for sample efficiency and enables the reuse of past experiences, a foundation of modern deep RL through experience replay buffers.
+
+Q-values, denoted $Q^$pi$(s, a)$, estimate the expected return of taking action $a$ in state $s$ and then following policy $$pi$$ thereafter. They are updated iteratively based on observed transitions $(s, a, r, s')$, following temporal difference learning principles. Standard update rules take the general form:
+
+$$
+Q^$pi$(s_t, a_t) \leftarrow $Q^pi$(s_t, a_t) + \alpha \left[r(s, a) + \max_a $Q^pi$(s\_{t+1}, a), - $Q^pi$(s_t, a_t)\right],
+$$
+
+==== AFU: True Off-Policy Critic Improvement
+
+AFU (Action Fitting Update) explicitly breaks this cycle. It seeks to perform Q-value maximization over the action space without relying on policy-driven gradients. Rather than relying on a policy $pi$ to select the next action in $s'$, AFU aims to directly optimize $Q^pi(s', a)$ via a standalone maximization mechanism. This design allows the critic to improve independently of the actor, drawing from the true spirit of Q-learning.
+
+This fundamental difference enables AFU to maintain effective learning from purely random policies, as shown in our experiments. In simple environments such as Cartpole or MountainCar, AFU achieves competitive or superior performance without requiring improvements from the actor policy. That is, the Q-function can be improved significantly just through off-policy updates on replayed transitions—even when the sampled actions come from a random or poorly performing behavior policy.
+
+This capability highlights a key insight of our research: **in simple environments, the critic alone—via direct maximization of Q-values—can drive convergence without needing actor updates.** This sheds light on the power of decoupled critic learning and calls into question the need for tightly intertwined actor-critic loops in low-complexity settings.
+
+In more complex environments, however, exploration and policy improvement become critical. Sparse rewards, state-dependent transition dynamics, and multimodal reward distributions (as seen in Pendulum and Lunar Lander) challenge purely off-policy critics due to poor data coverage in important regions of the state-action space. Nevertheless, the fully off-policy design of AFU provides a principled and robust baseline from which more advanced exploration strategies can be layered.
+
+==== Off-policy learning experimental setup
+
+Our first experiment aims to evaluate whether AFU can truly learn from randomly generated data, a capability that would distinguish it from traditional off-policy algorithms like DDPG and SAC. The hypothesis stems from the theoretical properties of AFU's critic update mechanism, which, unlike SARSA-based algorithms, does not rely on the actor's improvement to approximate the max-Q operation.
+
+Traditional actor-critic algorithms like SAC and DDPG are structurally closer to SARSA than to Q-learning. Despite being categorized as off-policy, they depend on the actor to generate actions for the critic's updates, creating an implicit coupling. In contrast, AFU's value and advantage decomposition, combined with conditional gradient scaling, allows it to compute critic updates independently of the actor, potentially enabling true off-policy learning.
 
 To test this hypothesis, we designed a protocol where instead of collecting
 experience through environment interaction with the current policy, we randomly
@@ -623,3 +634,25 @@ The following figures show the performance of DDPG, SAC and AFU in an off-policy
   image("figures/histogram_LunarLander_AFU_OffPolicy.svg"),
   caption: [AFU last rewards in the LunarLander environment under off-policy training conditions. The distribution approaches values between -1000 and 0, suggesting that the algorithm doesn't learn a catastrophic policy but isn't able to land the rocket either.],
 ) <lunarlander-afu-offpolicy>
+
+== Appendix E
+
+#figure(
+  image("figures/Cartpole Continuous OnPolicy Training Progress.svg"),
+  caption: [Every algorithms converges to a similar performance level in the Cartpole environment under on-policy training conditions with AFU converging faster than SAC and SAC converging faster than DDPG. The good performances are expected since the environment is very simple. We observe a drop in performance at the end of the training, indicating that SAC and DDPG are not able to learn a stable policy.],
+) <cartpole-onpolicy>
+
+#figure(
+  image("figures/Mountain Car OnPolicy Training Progress.svg"),
+  caption: [Every algorithms converges to a similar performance level in the MountainCar environment under on-policy training conditions but AFU is a bit suboptimal. The good performances are expected since the environment is very simple.],
+) <mountaincar-onpolicy>
+
+#figure(
+  image("figures/Pendulum OnPolicy Training Progress.svg"),
+  caption: [SAC is very good in the Pendulum environment under on-policy training conditions while AFU is very inconsistent. This can be explained by the nature of the environment--it is very sensible to small variations so each action is critical--thus the action must be chosen wisely.],
+) <pendulum-onpolicy>
+
+#figure(
+  image("figures/Lunar Lander OnPolicy Training Progress.svg"),
+  caption: [AFU shows that it is way better than DDPG and SAC in the Lunar Lander environment under on-policy training conditions. AFU is adapted to complex environments with sparse rewards and is able to learn a stable policy. DDPG and SAC are not able to learn a stable policy. It is interesting to compare the performance of AFU in the Lunar Lander environment with the performance of AFU in Pendulum. Lunar Lander gives more informative rewards (altitude, position, orientation) and need more strategic planning as the margin error is more important and the main goal is to land correctly so with less time constraint.],
+) <lunarlander-onpolicy>
