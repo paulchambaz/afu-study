@@ -1,7 +1,7 @@
 run *ARGS:
-  python -m scripts.evaluate --algo ddpg --env cartpole --experiment onpolicy --run 5 --steps 200000 --trials 0
-  python -m scripts.evaluate --algo sac --env cartpole --experiment onpolicy --run 5 --steps 200000 --trials 0
-  python -m scripts.evaluate --algo afu --env cartpole --experiment onpolicy --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo ddpg --env mountaincar --experiment onpolicy --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo sac --env mountaincar --experiment onpolicy --run 5 --steps 200000 --trials 0
+  python -m scripts.evaluate --algo afu --env mountaincar --experiment onpolicy --run 5 --steps 200000 --trials 0
 
 run-tiny:
   python -m scripts.evaluate --algo afu --env pendulum --experiment onpolicy --run 1 --steps 500 --trials 0
