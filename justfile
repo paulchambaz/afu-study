@@ -1,7 +1,7 @@
 run *ARGS:
-  python -m scripts.evaluate --algo calql --env lunarlander --experiment offlineonline --run 5 --steps 400000 --trials 0
-  python -m scripts.evaluate --algo iql --env lunarlander --experiment offlineonline --run 5 --steps 400000 --trials 0
-  python -m scripts.evaluate --algo sac --env lunarlander --experiment offlineonline --run 5 --steps 400000 --trials 0
+  # python -m scripts.evaluate --algo calql --env lunarlander --experiment offlineonline --run 5 --steps 400000 --trials 0
+  # python -m scripts.evaluate --algo iql --env lunarlander --experiment offlineonline --run 5 --steps 400000 --trials 0
+  # python -m scripts.evaluate --algo sac --env lunarlander --experiment offlineonline --run 5 --steps 400000 --trials 0
   python -m scripts.evaluate --algo afu --env lunarlander --experiment offlineonline --run 5 --steps 400000 --trials 0
 
 run-tiny:

@@ -86,7 +86,7 @@ def plot_histograms(experiment_results, colors_dict, experiment, env):
 
 def main():
     # algorithms = ["SAC", "AFU"]
-    algorithms = ["AFU", "SAC"]
+    algorithms = ["AFU", "SAC", "IQL", "CALQL"]
     # experiments = ["OnPolicy"]
     experiments = ["OfflineOnlineTransition"]
 
