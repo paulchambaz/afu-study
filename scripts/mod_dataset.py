@@ -1,6 +1,9 @@
 import pickle
 
-dataset_files = ["dataset/OnPolicyDataset-AFU-LunarLanderContinuousStudy-v0-dataset.pk"]
+dataset_files = [
+    "dataset/OnPolicyDataset-AFU-LunarLanderContinuousStudy-v0-dataset.pk",
+    "dataset/OnPolicyDataset-SAC-LunarLanderContinuousStudy-v0-dataset.pk",
+]
 
 for file in dataset_files:
     # Load the original dataset
@@ -25,7 +28,7 @@ for file in dataset_files:
     print(f"Found {total_episodes} episodes")
 
     # Step 2: Calculate how many episodes we need to keep
-    target_size = 200000
+    target_size = 100000
 
     # First, calculate the total transitions we'd have with each stride
     stride_results = {}
@@ -35,7 +38,7 @@ for file in dataset_files:
         stride_results[stride] = size
 
         # Early exit if we find a good result
-        if 200000 <= size <= 210000:
+        if 100000 <= size <= 110000:
             break
 
     # Find the stride that gives us just over 200k transitions
