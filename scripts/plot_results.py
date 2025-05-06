@@ -77,7 +77,7 @@ def plot_histograms(experiment_results, colors_dict, experiment, env):
         plt.xlabel("Return")
         plt.ylabel("Frequency")
         plt.grid(True, alpha=0.3)
-        # plt.show()
+        plt.show()
 
         # svg_filename = f"histogram_{env}_{algo}_{experiment}.svg"
         # plt.savefig(svg_filename, format="svg")
@@ -87,8 +87,8 @@ def plot_histograms(experiment_results, colors_dict, experiment, env):
 def main():
     # algorithms = ["SAC", "AFU"]
     algorithms = ["AFU", "SAC"]
-    experiments = ["OnPolicy"]
-    # experiments = ["OfflineOnlineTransition"]
+    # experiments = ["OnPolicy"]
+    experiments = ["OfflineOnlineTransition"]
 
     env = "Lunar Lander"
     env_dict = {
