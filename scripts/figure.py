@@ -1,13 +1,10 @@
 import argparse
 import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize
 import torch
 import math
-import gymnasium as gym
 import pickle
 import numpy as np
 from pathlib import Path
-from tqdm import tqdm
 from bbrl.workspace import Workspace  # type: ignore
 
 from afu.agents.ddpg import DDPG
@@ -52,7 +49,79 @@ def load_results_file(results_path):
     return results
 
 
+def get_v_critic_value(agent, state):
+    max_q = float("-inf")
+    for i in range(100):
+        action = torch.tensor([[((i / 100) * 2 - 1) * 2]])
+
+        q_workspace = Workspace()
+        q_workspace.set("env/env_obs", 0, state)
+        q_workspace.set("action", 0, action)
+        agent.critic(q_workspace, t=0)
+        q_values = q_workspace.get("critic/q_value", 0)
+
+        if q_values > max_q:
+            max_q = q_values
+
+    return max_q
+
+
+def get_v12_value(agent, state):
+    v1_workspace = Workspace()
+    v1_workspace.set("env/env_obs", 0, state)
+    agent.v_network1(v1_workspace, t=0)
+    v1_values = v1_workspace.get("v1/v_value", 0)
+
+    v2_workspace = Workspace()
+    v2_workspace.set("env/env_obs", 0, state)
+    agent.v_network2(v2_workspace, t=0)
+    v2_values = v2_workspace.get("v2/v_value", 0)
+
+    v_value = min(v1_values, v2_values)
+
+    return v_value
+
+
+def get_v_value(agent, state):
+    v_workspace = Workspace()
+    v_workspace.set("env/env_obs", 0, state)
+    agent.v_network(v_workspace, t=0)
+    v_value = v_workspace.get("v/v_value", 0)
+
+    return v_value
+
+
+def get_v_q_value(agent, state):
+    max_q = float("-inf")
+    for i in range(100):
+        action = torch.tensor([[((i / 100) * 2 - 1) * 2]])
+
+        q_workspace = Workspace()
+        q_workspace.set("env/env_obs", 0, state)
+        q_workspace.set("action", 0, action)
+        agent.q_network(q_workspace, t=0)
+        q_values = q_workspace.get("q/q_value", 0)
+
+        if q_values > max_q:
+            max_q = q_values
+
+    return max_q
+
+
 def main():
+    plt.rcParams.update(
+        {
+            "text.usetex": True,
+            "font.family": "serif",
+            "font.serif": ["Computer Modern Roman"],
+            "axes.labelsize": 20,
+            "font.size": 20,
+            "legend.fontsize": 16,
+            "xtick.labelsize": 16,
+            "ytick.labelsize": 16,
+        }
+    )
+
     parser = argparse.ArgumentParser(
         description="Collect expert experience data from trained agent"
     )
@@ -104,8 +173,8 @@ def main():
     else:
         agent = load_agent_from_weights(env_name, algo_class, args.weights)
 
-    width = 100
-    height = 100
+    width = 50
+    height = 50
 
     angles = np.zeros((width))
     velocities = np.zeros((height))
@@ -130,72 +199,57 @@ def main():
             policy_workspace = Workspace()
             policy_workspace.set("env/env_obs", 0, state)
             agent.policy_network(policy_workspace, t=0)
-            # agent.policy_network.sample_action(policy_workspace, t=0)
+            agent.policy_network.sample_action(policy_workspace, t=0)
+            # action = policy_workspace.get("action", 0)
             action = policy_workspace.get("mean", 0)
+            # actions[j, i] = action
             actions[j, i] = torch.tanh(action)
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-    fig.suptitle("CALQL", fontsize=16)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
-    # First subplot: V-values
-    im1 = ax1.pcolormesh(angles, velocities, v_values, shading="auto", cmap="viridis")
-    ax1.set_title("V-Values as a function of angle and velocity")
+    # Completely turn off the grid
+    ax1.grid(False)
+    ax2.grid(False)
+
+    # Create the extent for proper axis scaling
+    extent = [0, 2 * np.pi, -8, 8]  # [xmin, xmax, ymin, ymax]
+
+    # First subplot: V-values - using imshow for better SVG compatibility
+    im1 = ax1.imshow(
+        v_values,
+        aspect="auto",
+        origin="lower",
+        extent=extent,
+        cmap="viridis",
+        interpolation="nearest",
+    )
+    ax1.set_title("V-Values")
     ax1.set_xlabel("Angle (radians)")
     ax1.set_ylabel("Velocity")
-    fig.colorbar(im1, ax=ax1, label="V Value")
+    fig.colorbar(im1, ax=ax1)
 
-    # Second subplot: Actions
-    im2 = ax2.pcolormesh(angles, velocities, actions, shading="auto", cmap="coolwarm")
-    ax2.set_title("Actions as a function of angle and velocity")
+    # Second subplot: Actions - using imshow
+    im2 = ax2.imshow(
+        actions,
+        aspect="auto",
+        origin="lower",
+        extent=extent,
+        cmap="coolwarm",
+        interpolation="nearest",
+    )
+    ax2.set_title("Actions")
     ax2.set_xlabel("Angle (radians)")
     ax2.set_ylabel("Velocity")
-    fig.colorbar(im2, ax=ax2, label="Action")
+    fig.colorbar(im2, ax=ax2)
 
-    # Adjust layout to prevent overlap
-    plt.tight_layout(rect=[0, 0, 1, 0.95])  # Leave space for the main title
-    plt.show()
+    # Tight layout
+    plt.tight_layout()
 
+    # Save with specific SVG-friendly settings
+    plt.savefig(
+        "figure.svg", format="svg", bbox_inches="tight", transparent=True, dpi=300
+    )
 
-def get_v12_value(agent, state):
-    v1_workspace = Workspace()
-    v1_workspace.set("env/env_obs", 0, state)
-    agent.v_network1(v1_workspace, t=0)
-    v1_values = v1_workspace.get("v1/v_value", 0)
-
-    v2_workspace = Workspace()
-    v2_workspace.set("env/env_obs", 0, state)
-    agent.v_network2(v2_workspace, t=0)
-    v2_values = v2_workspace.get("v2/v_value", 0)
-
-    v_value = min(v1_values, v2_values)
-
-    return v_value
-
-
-def get_v_value(agent, state):
-    v_workspace = Workspace()
-    v_workspace.set("env/env_obs", 0, state)
-    agent.v_network(v_workspace, t=0)
-    v_value = v_workspace.get("v/v_value", 0)
-
-    return v_value
-
-
-def get_v_q_value(agent, state):
-    max_q = float("-inf")
-    for i in range(100):
-        action = torch.tensor([[((i / 100) * 2 - 1) * 2]])
-
-        q_workspace = Workspace()
-        q_workspace.set("env/env_obs", 0, state)
-        q_workspace.set("action", 0, action)
-        agent.q_network(q_workspace, t=0)
-        q_values = q_workspace.get("q/q_value", 0)
-
-        if q_values > max_q:
-            max_q = q_values
-
-    return max_q
 
 
 if __name__ == "__main__":
