@@ -58,7 +58,7 @@
   ]
 
   if abstract != none {
-    align(center, text(13pt, weight: 500, smallcaps[Abstract]))
+    align(center, text(13pt, weight: 700, smallcaps[Abstract]))
     pad(x: 1cm, bottom: 0.5cm, abstract)
   }
 
@@ -67,7 +67,7 @@
   ): it => block(width: 100%)[
     #v(0.2cm)
     #set align(center)
-    #set text(13pt, weight: 500)
+    #set text(13pt, weight: 700)
     #pad(x: 1cm, smallcaps(it.body))
     #v(0.2cm)
   ]
@@ -76,7 +76,7 @@
     level: 3
   ): it => text(
     size: 11pt,
-    weight: "regular",
+    weight: 700,
     style: "italic",
     it.body + [.],
   )
@@ -85,7 +85,7 @@
     level: 4
   ): it => text(
     size: 11pt,
-    weight: "regular",
+    weight: 700,
     style: "italic",
     h(1em) + [(] + it.body + [)],
   )
