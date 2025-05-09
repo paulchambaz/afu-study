@@ -41,7 +41,7 @@
           university,
           h(1fr),
           [ #context { counter(page).display("1") } ],
-          h(.95fr),
+          h(1.3fr),
           reference,
       )
     ],
