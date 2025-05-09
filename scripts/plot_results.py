@@ -137,7 +137,6 @@ def display_auc(results_dict, colors_dict, N=4):
 def display_results(results_dict, colors_dict, title, N=4):
     interval = 100
     plt.figure(figsize=(6, 6))
-
     for algo, results in results_dict.items():
         rewards_data = results["rewards"]
         timesteps = np.array(list(rewards_data.keys())) * interval
@@ -164,29 +163,27 @@ def display_results(results_dict, colors_dict, title, N=4):
             alpha=0.2,
             color=colors_dict[algo],
         )
-
-    plt.axvline(
-        x=200_000,
-        color="black",
-        linestyle="--",
-        linewidth=1.5,
-    )
+    # plt.axvline(
+    #     x=200_000,
+    #     color="black",
+    #     linestyle="--",
+    #     linewidth=1.5,
+    # )
+    # Set the y-axis lower limit to -400
+    plt.ylim(bottom=-400)
 
     plt.xlabel("Training Steps")
     plt.ylabel("Return")
     # plt.title(title)
     plt.legend()
     plt.grid(True, alpha=0.3)
-
     from matplotlib.ticker import FuncFormatter
 
     def format_func(x, pos):
         return f"{int(x / 1000)}k"
 
     plt.gca().xaxis.set_major_formatter(FuncFormatter(format_func))
-
     plt.tight_layout(pad=0.5)
-
     plt.savefig(f"{title}.svg", format="svg", bbox_inches="tight")
 
 
@@ -245,12 +242,13 @@ def main():
         }
     )
 
-    # algorithms = ["SAC", "AFU", "DDPG"]
-    algorithms = ["AFU", "SAC", "IQL", "CALQL"]
-    # experiments = ["OffPolicy", "OnPolicy"]
-    experiments = ["OfflineOnlineTransition"]
+    algorithms = ["SAC", "AFU", "DDPG"]
+    # algorithms = ["AFU", "SAC", "IQL", "CALQL"]
+    experiments = ["OffPolicy"]
+    # experiments = ["OnPolicy"]
+    # experiments = ["OfflineOnlineTransition"]
 
-    env = "Lunar Lander"
+    env = "Pendulum"
     env_dict = {
         "Cartpole Continuous": "CartPoleContinuousStudy-v0",
         "Mountain Car": "MountainCarContinuousStudy-v0",
@@ -279,18 +277,18 @@ def main():
                 continue
 
         if experiment_results:
-            # display_results(
-            #     experiment_results,
-            #     colors_dict,
-            #     f"{env} {experiment} Training Progress",
-            #     N=8,
-            # )
-
-            display_auc(
+            display_results(
                 experiment_results,
                 colors_dict,
+                f"{env} {experiment} Training Progress",
                 N=8,
             )
+
+            # display_auc(
+            #     experiment_results,
+            #     colors_dict,
+            #     N=8,
+            # )
 
             # plot_histograms(experiment_results, colors_dict, experiment, env)
 
